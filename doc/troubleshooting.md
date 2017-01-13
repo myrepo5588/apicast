@@ -11,10 +11,10 @@ e.g
 `curl -v -H 'X-3scale-Debug: SERVICE_TOKEN' -X GET "https://api.example.com/ping?user_key=1234567"`
 
 This will return the following additional headers:
-- `X-3scale-matched-rules`: Any matched methods/metrics in the request.
-- `X-3scale-credentials`: The credentials extracted by APIcast for the request.
-- `X-3scale-usage`: The usage registered for the methods/metrics in the request.
-- `X-3scale-hostname`: The 
+- `X-3scale-matched-rules`: Any matched methods/metrics in the request e.g `/ping`
+- `X-3scale-credentials`: The credentials extracted by APIcast for the request e.g `user_key=1234567`
+- `X-3scale-usage`: The usage registered for the methods/metrics in the request e.g `usage[hits]=1`
+- `X-3scale-hostname`: The APIcast instance hostname e.g ``
 
 ## Self-Managed
 
@@ -54,10 +54,13 @@ into apicast/http.d/resolver.conf as follows
 
 ```
 resolver 1.2.3.4 ipv6=off;
-resolver 5.6.7.8 ipv6=off;
 ```
 
 You can read more about the resolver directive in the [Nginx Documentation](https://nginx.org/en/docs/http/ngx_http_core_module.html#resolver)
+
+### `PATH` Issues
+
+If APIcast doesn't seem to be able to start and returns without any output, check that you have added the openresty binaries to your `PATH` e.g `export PATH=/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:$PATH`
 
 ## Openshift
 
