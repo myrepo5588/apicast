@@ -1,5 +1,21 @@
 # Troubleshooting APIcast
 
+## Generic Troubleshooting
+
+### X-3scale-debug header 
+
+When making an API request you can add some additional headers to the response for troubleshooting purposes by adding the `X-3scale-Debug` header to the request. 
+
+e.g 
+
+`curl -v -H 'X-3scale-Debug: SERVICE_TOKEN' -X GET "https://api.example.com/ping?user_key=1234567"`
+
+This will return the following additional headers:
+- `X-3scale-matched-rules`: Any matched methods/metrics in the request.
+- `X-3scale-credentials`: The credentials extracted by APIcast for the request.
+- `X-3scale-usage`: The usage registered for the methods/metrics in the request.
+- `X-3scale-hostname`: The 
+
 ## Self-Managed
 
 ### Logging
@@ -8,8 +24,15 @@ When running APIcast, the default log level is `warn.`
 
 You can increase verbosity in the logs by appending (multiple) `-v` parameters when running the apicast binary, e.g 
 
+`THREESCALE_CONFIG_FILE=config.json bin/apicast -v -v -v`
+
+In the above example, the log level would be increased to `debug`, the maximum log level.
 
 You can also decrease verbosity by appending (multiple) `-q` parameters instead, e.g 
+
+`THREESCALE_CONFIG_FILE=config.json bin/apicast -q -q`
+
+this would decrease the log level to `crit`.
 
 ### DNS Issues
 
