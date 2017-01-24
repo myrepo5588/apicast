@@ -109,6 +109,16 @@ test-runtime-image: clean-containers ## Smoke test the runtime image. Pass any d
 	@echo -e $(SEPARATOR)
 	$(DOCKER_COMPOSE) run --rm test sh -c 'sleep 5 && curl --fail http://gateway:8090/status/live'
 
+tmp:
+	mkdir -p $@
+
+profile: tmp
+	bin/apicast -s stop -p tmp/apicast.pid || true
+	bin/apicast -m off -d -p tmp/apicast.pid
+	lj-lua-stacks.sxx --skip-badvars -x $(shell cat tmp/apicast.pid) --arg time=5
+	bin/apicast -s stop -p tmp/apicast.pid || true
+
+
 dependencies:
 	luarocks make apicast/*.rockspec
 	luarocks make rockspec
