@@ -25,12 +25,11 @@ _M.params = {
   }
 }
 
-function _M.new(service)
+function _M.new()
   return setmetatable(
     {
       callback = callback.call,
-      get_token = get_token.call,
-      service = service
+      get_token = get_token.call
     }, mt)
 end
 
@@ -130,7 +129,6 @@ local function persist_nonce(service_id, params)
   -- Overwrite state to nonce value to share state between gateway and auth server
   params.state = n
 end
-
 
 function _M.authorize(service)
   local params = ngx.req.get_uri_args()
