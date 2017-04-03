@@ -1,5 +1,6 @@
 local _M = require 'oauth.apicast_oauth'
 local test_backend_client = require 'resty.http_ng.backend.test'
+local match = require("luassert.match")
 
 describe('APIcast Oauth', function()
   local test_backend
@@ -12,7 +13,7 @@ describe('APIcast Oauth', function()
       local apicast_oauth = _M.new()
 
       ngx.var = { is_args = "?", args = "" }
-      stub(ngx.req, 'get_uri_args', function() return { client_id = 'foo', redirect_uri = 'bar' } end)      
+      stub(ngx.req, 'get_uri_args', function() return { client_id = 'foo', redirect_uri = 'bar' } end)
 
       stub(_M, 'respond_with_error')
       apicast_oauth.authorize()
@@ -23,7 +24,7 @@ describe('APIcast Oauth', function()
       local apicast_oauth = _M.new()
 
       ngx.var = { is_args = "?", args = "" }
-      stub(ngx.req, 'get_uri_args', function() return { response_type = 'blah', client_id = 'foo', redirect_uri = 'bar' } end)      
+      stub(ngx.req, 'get_uri_args', function() return { response_type = 'blah', client_id = 'foo', redirect_uri = 'bar' } end)
 
       stub(_M, 'respond_with_error')
       apicast_oauth.authorize()
@@ -34,7 +35,7 @@ describe('APIcast Oauth', function()
       local apicast_oauth = _M.new()
 
       ngx.var = { is_args = "?", args = "" }
-      stub(ngx.req, 'get_uri_args', function() return { response_type = 'code', client_id = 'foo'} end)      
+      stub(ngx.req, 'get_uri_args', function() return { response_type = 'code', client_id = 'foo'} end)
 
       stub(_M, 'respond_with_error')
       apicast_oauth.authorize()
