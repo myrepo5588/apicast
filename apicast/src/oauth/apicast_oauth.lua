@@ -4,7 +4,6 @@ local ts = require 'threescale_utils'
 local cjson = require 'cjson'
 local backend_client = require ('backend_client')
 local get_token = require 'oauth.apicast_oauth.get_token'
-local callback = require 'oauth.apicast_oauth.authorized_callback'
 
 local _M = {
   _VERSION = '0.1'
@@ -28,7 +27,6 @@ _M.params = {
 function _M.new()
   return setmetatable(
     {
-      callback = callback.call,
       get_token = get_token.call
     }, mt)
 end
@@ -59,6 +57,12 @@ function _M.respond_with_error(status, message)
   local err_msg = { error = message }
   local body = cjson.encode(err_msg)
   _M.respond_and_exit(status, body, headers)
+end
+
+-- TOOD: Split error conditions up further to decide when we should respond with error and when we should redirect_with error
+function _M.redirect_with_error(url, error, state)
+  ngx.header.content_type = "application/x-www-form-urlencoded"
+  return ngx.redirect(url,"?error=",error.error,"&error_description=",error.error_description,"&state=",state)
 end
 
 function _M.authorize_check_params(params)
@@ -100,15 +104,15 @@ local function generate_access_token(client_id)
 end
 
 local function persist_nonce(service_id, params)
+  -- State value shared between client and gateway
+  local client_state = params.state
+
   -- State value that will be shared between gateway and authorization server
   local n = nonce(params.client_id)
 
   -- Pre-generated access token
   --TODO: Check if we can just generate token when we need it later
   local pre_token = generate_access_token(params.client_id)
-
-  -- State value shared between client and gateway
-  local client_state = params.state
 
   local redis_key = service_id.."#tmp_data:"..n
   local client_data = {
@@ -128,6 +132,34 @@ local function persist_nonce(service_id, params)
 
   -- Overwrite state to nonce value to share state between gateway and auth server
   params.state = n
+end
+
+-- Generate authorization code from params
+local function generate_code(client_data)
+  return ts.sha1_digest(tostring(random.bytes(20, true)) .. "#code:" .. tostring(client_data.client_id))
+end
+
+local function persist_code(client_data, code)
+  local ok, err
+  local redis = ts.connect_redis()
+
+  if redis then
+    ok, err = redis:hmset("c:".. code, {
+      client_id = client_data.client_id,
+      client_secret = client_data.secret_id,
+      redirect_uri = client_data.redirect_uri,
+      access_token = client_data.access_token,
+      code = code
+    })
+
+    if ok then
+      return redis:expire("c:".. code, 60 * 10) -- code expires in 10 mins
+    else
+      return ok, err
+    end
+
+    ts.release_redis(redis)
+  end
 end
 
 function _M.authorize(service)
@@ -152,6 +184,45 @@ function _M.authorize(service)
 
   ngx.header.content_type = "application/x-www-form-urlencoded"
   return ngx.redirect(login_url .. "?" .. args)
+end
+
+function _M.callback()
+  local ok, err
+  local client_data
+
+  local params = ngx.req.get_uri_args()
+
+  if not params.state then
+    _M.respond_with_error(400, "invalid_request")
+  end
+
+  local redis = ts.connect_redis()
+
+  if redis then
+    local tmp_data = ngx.ctx.service.id.."#tmp_data"..state
+    ok, err = redis:hgetall(tmp_data)
+    redis:del(tmp_data)
+
+    if not ok then 
+    -- TODO: Add debug message for ngx
+    -- TOOD: where do we get the redirect_uri from unless the Authorization passes it back to us? 
+      return
+    end
+
+    client_data = redis:array_to_hash(ok)
+    ts.release_redis(redis)
+  end
+
+  local code = generate_code(client_data)
+  ok, err = persist_code(client_data, params, code)
+
+  if not ok then
+    _M.redirect_with_error(client_data.redirect_uri, err, client_data.state)    
+  end
+
+  ngx.header.content_type = "application/x-www-form-urlencoded"
+  return ngx.redirect( client_data.redirect_uri .. "?code="..code.."&state=" .. (client_data.state or ""))
+
 end
 
 return _M
