@@ -1,6 +1,7 @@
 local _M = require 'oauth.apicast_oauth'
 local test_backend_client = require 'resty.http_ng.backend.test'
 local match = require("luassert.match")
+local ts = 'threescale_utils'
 
 describe('APIcast Oauth', function()
   local test_backend
@@ -78,6 +79,54 @@ describe('APIcast Oauth', function()
       ngx.header = { content_type = "application/x-www-form-urlencoded" }
       apicast_oauth.authorize(service)
       assert.spy(ngx.redirect).was.called_with(match.is_string())
+    end)
+  end)
+  
+  -- describe('.check_credentials', function()
+  --   it('returns true if credentials are correct', function()
+  --     local apicast_oauth = _M.new()
+  --     local service = configuration.parse_service({
+  --       id = '123', backend_version = '1',
+  --       proxy = {
+  --         backend = { endpoint = 'http://example.com' },
+  --       },
+  --       backend_authentication_type = 'auth', backend_authentication_value = 'val'
+  --     })
+  --     local params = { client_id = "123abc", client_secret = "123abc456def", redirect_uri = "http://example.com/oauth/callback" }
+  --     local args = { params.client_id, params.client_secret, params.redirect_uri }
+  --     
+  --     test_backend.expect{
+  --       url = 'http://example.com/transactions/authorize.xml?service_id=123&auth=val&client_id=123abc&client_secret=123abc456def&redirect_uri=http://example.com/oauth/callback'
+  --     }.respond_with{ status = 200, body = 'foo', headers = {} }
+  --     local backend_client = assert(_M:new(service, test_backend))
+  --     
+  --     local res = backend_client:authorize(args)
+  --     
+  --     -- assert.True(apicast_oauth:check_credentials(service, params))
+  --   end)
+  -- end)
+  describe('.callback', function()
+    it('responds with error when state is missing', function()
+      local apicast_oauth = _M.new()
+      -- local client_data = { client_id = '123456', client_secret = 'abcdef' }
+      -- local code = 123456789
+      
+      stub(ngx.req, 'get_uri_args', function() return { code = '123456' } end)
+      stub(_M, 'respond_with_error')
+      
+      apicast_oauth.callback()
+      assert.spy(_M.respond_with_error).was.called_with(400, 'invalid_request')
+    end)
+    
+    it('responds with error when state value is invalid', function()
+      local apicast_oauth = _M.new()
+      
+      stub(ngx.req, 'get_uri_args', function() return { code = '123456', state = '987654', redirect_uri = "http://example.com/oauth/callback" } end)
+      stub(_M, 'respond_with_error')
+      stub(_M, 'check_state', function() return false end)
+      
+      apicast_oauth.callback()
+      assert.spy(_M.respond_with_error).was.called_with(400, 'invalid_state')
     end)
   end)
 end)
