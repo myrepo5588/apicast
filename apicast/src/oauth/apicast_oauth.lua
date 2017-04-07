@@ -162,6 +162,23 @@ local function persist_code(client_data, code)
   end
 end
 
+function _M.check_state(state)
+  redis = ts.connect_redis()
+
+  if redis then
+    local tmp_data = ngx.ctx.service.id.."#tmp_data"..state
+    ok, err = redis:hgetall(tmp_data)
+    redis:del(tmp_data)
+    
+    if not ok then
+      return ok, err
+    end
+
+    client_data = redis:array_to_hash(ok)
+    ts.release_redis(redis)
+  end
+end
+
 function _M.authorize(service)
   local params = ngx.req.get_uri_args()
 
@@ -194,30 +211,24 @@ function _M.callback()
 
   if not params.state then
     _M.respond_with_error(400, "invalid_request")
+    return
   end
-
-  local redis = ts.connect_redis()
-
-  if redis then
-    local tmp_data = ngx.ctx.service.id.."#tmp_data"..state
-    ok, err = redis:hgetall(tmp_data)
-    redis:del(tmp_data)
-
-    if not ok then 
-    -- TODO: Add debug message for ngx
-    -- TOOD: where do we get the redirect_uri from unless the Authorization passes it back to us? 
-      return
-    end
-
-    client_data = redis:array_to_hash(ok)
-    ts.release_redis(redis)
+  
+  ok, err = _M.check_state(params.state)
+  
+  if not ok then 
+  -- TODO: Add debug message for ngx
+  -- TODO: where do we get the redirect_uri from unless the Authorization passes it back to us?
+    _M.respond_with_error(400, 'invalid_state')
+    return
   end
 
   local code = generate_code(client_data)
   ok, err = persist_code(client_data, params, code)
 
   if not ok then
-    _M.redirect_with_error(client_data.redirect_uri, err, client_data.state)    
+    _M.redirect_with_error(client_data.redirect_uri, err, client_data.state)
+    return   
   end
 
   ngx.header.content_type = "application/x-www-form-urlencoded"
