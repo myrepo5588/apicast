@@ -85,8 +85,6 @@ describe('APIcast Oauth', function()
   describe('.callback', function()
     it('responds with error when state is missing', function()
       local apicast_oauth = _M.new()
-      -- local client_data = { client_id = '123456', client_secret = 'abcdef' }
-      -- local code = 123456789
       
       stub(ngx.req, 'get_uri_args', function() return { code = '123456' } end)
       stub(_M, 'respond_with_error')
