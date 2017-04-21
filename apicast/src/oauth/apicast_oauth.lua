@@ -1,16 +1,16 @@
--- local setmetatable = setmetatable
+local setmetatable = setmetatable
 local random = require 'resty.random'
 local ts = require 'threescale_utils'
 local cjson = require 'cjson'
 local backend_client = require ('backend_client')
 -- local get_token = require 'oauth.apicast_oauth.get_token'
 local re = require 'ngx.re'
-
+local inspect = require 'inspect'
 local _M = {
   _VERSION = '0.1'
 }
 
--- local mt = { __index = _M }
+local mt = { __index = _M }
 
 -- Required params for each grant type and response type.
 _M.params = {
@@ -25,12 +25,11 @@ _M.params = {
   }
 }
 
--- function _M.new()
---   return setmetatable(
---     {
---       get_token = get_token.call
---     }, mt)
--- end
+function _M.new()
+  return setmetatable(
+    {
+    }, mt)
+end
 
 function _M.extract_params()
   local params = {}
@@ -86,6 +85,7 @@ function _M.respond_with_error(status, message)
   }
   local err_msg = { error = message }
   local body = cjson.encode(err_msg)
+  ngx.log(ngx.INFO, "error :" .. inspect(body))
   _M.respond_and_exit(status, body, headers)
 end
 
@@ -339,7 +339,8 @@ function _M.authorize(service)
     _M.respond_with_error(400, err)
     return
   end
-
+  
+  ngx.log(ngx.INFO, "service :" .. inspect(service))
   ok = _M.check_credentials(service, params)
   if not ok then
     _M.respond_with_error(401, 'invalid_client')
