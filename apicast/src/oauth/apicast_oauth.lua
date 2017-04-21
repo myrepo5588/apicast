@@ -110,6 +110,20 @@ function _M.check_params(params)
   return true
 end
 
+function _M.token_check_params(params)
+  local grant_type = params.grant_type
+  local required_params = _M.params.grant_type
+  if not grant_type then return false, 'invalid_request' end
+  if not required_params[grant_type] then return false, 'unsupported_grant_type' end
+
+  for _,v in ipairs(required_params[grant_type]) do
+    if not params[v] then
+      return false, 'invalid_request'
+    end
+  end
+  return true
+end
+
 function _M.check_credentials(service, params)
   local backend = backend_client:new(service)
 
@@ -303,11 +317,14 @@ local function store_token(params, token)
 end
 
 -- Get the token from Redis
-function _M.get_token(params)
+function _M:get_token(service)
   local ok, err
   local res
   
-  ok, err = _M.check_params(params)
+  ngx.req.read_body()
+  params = ngx.req.get_post_args()
+  ngx.log(ngx.INFO, "params :" .. inspect(params))
+  ok, err = _M.token_check_params(params)
   
   if not ok then
     _M.respond_with_error(400, err)
@@ -331,7 +348,7 @@ function _M.get_token(params)
   end
 end
 
-function _M.authorize(service)
+function _M:authorize(service)
   local params = ngx.req.get_uri_args()
 
   local ok, err = _M.check_params(params)
@@ -377,7 +394,7 @@ function _M.callback()
     return
   end
   
-  ok, err = get_code(ngx.ctx.service_id, params)
+  ok, err = get_code(ngx.ctx.service.id, params)
 
   if not ok then
     _M.redirect_with_error(client_data.redirect_uri, err, client_data.state)
