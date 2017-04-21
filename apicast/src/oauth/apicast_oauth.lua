@@ -235,7 +235,7 @@ local function generate_code(client_data)
 end
 
 local function store_code(client_data, params, code)
-  local ok, err = persist_code(client_data, params, code)
+  local ok, err = persist_code(client_data, code)
 
   if not ok then
     ngx.header.content_type = "application/x-www-form-urlencoded"
