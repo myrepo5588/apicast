@@ -1,16 +1,16 @@
-local setmetatable = setmetatable
+-- local setmetatable = setmetatable
 local random = require 'resty.random'
 local ts = require 'threescale_utils'
 local cjson = require 'cjson'
 local backend_client = require ('backend_client')
-local get_token = require 'oauth.apicast_oauth.get_token'
+-- local get_token = require 'oauth.apicast_oauth.get_token'
 local re = require 'ngx.re'
 
 local _M = {
   _VERSION = '0.1'
 }
 
-local mt = { __index = _M }
+-- local mt = { __index = _M }
 
 -- Required params for each grant type and response type.
 _M.params = {
@@ -25,14 +25,14 @@ _M.params = {
   }
 }
 
-function _M.new()
-  return setmetatable(
-    {
-      get_token = get_token.call
-    }, mt)
-end
+-- function _M.new()
+--   return setmetatable(
+--     {
+--       get_token = get_token.call
+--     }, mt)
+-- end
 
-function _M.function extract_params()
+function _M.extract_params()
   local params = {}
   local header_params = ngx.req.get_headers()
 
@@ -43,7 +43,7 @@ function _M.function extract_params()
   end
 
   local method = ngx.req.get_method()
-  if method not == POST then
+  if not method == 'POST' then
     _M.respond_with_error(400, 'invalid_HTTP_method')
     return
   end
@@ -164,23 +164,6 @@ local function persist_nonce(service_id, params)
   params.state = n
 end
 
--- Generate authorization code from params
-local function generate_code(client_data)
-  return ts.sha1_digest(tostring(random.bytes(20, true)) .. "#code:" .. tostring(client_data.client_id))
-end
-
--- Get Authorization Code
-local function get_code(service_id, params)
-  local client_data = retrieve_client_data(service_id, params)
-  local code = generate_code(client_data)
-
-  local stored = store_code(client_data, params, code)
-
-  if stored then
-    send_code(client_data, code)
-  end
-end
-
 -- Retrieve client data from Redis
 local function retrieve_client_data(service_id, params)
 
@@ -228,12 +211,43 @@ local function persist_code(client_data, code)
       return ok, err
     end
 
-    ts.release_redis(redis)
+  end
+  ts.release_redis(redis)
+end
+
+-- Generate authorization code from params
+local function generate_code(client_data)
+  return ts.sha1_digest(tostring(random.bytes(20, true)) .. "#code:" .. tostring(client_data.client_id))
+end
+
+local function store_code(client_data, params, code)
+  local ok, err = persist_code(client_data, params, code)
+
+  if not ok then
+    ngx.header.content_type = "application/x-www-form-urlencoded"
+    return ngx.redirect(params.redirect_uri .. "?error=server_error&error_description=code_storage_failed&state=" .. (params.state or "")), err
+  end
+
+  return ok, err
+end
+
+-- Get Authorization Code
+local function get_code(service_id, params)
+  local client_data = retrieve_client_data(service_id, params)
+  local code = generate_code(client_data)
+
+  local stored = store_code(client_data, params, code)
+
+  if stored then
+    send_code(client_data, code)
   end
 end
 
 -- Check valid state parameter sent
 function _M.check_state(state)
+  local redis
+  local ok, err
+  local client_data
   redis = ts.connect_redis()
 
   if redis then
@@ -246,8 +260,16 @@ function _M.check_state(state)
     end
 
     client_data = redis:array_to_hash(ok)
-    ts.release_redis(redis)
+    return client_data
   end
+  ts.release_redis(redis)
+end
+
+-- Returns the token to the client
+local function send_token(token)
+  ngx.header.content_type = "application/json; charset=utf-8"
+  ngx.say(cjson.encode(token))
+  ngx.exit(ngx.HTTP_OK)
 end
 
 -- Returns the access token (stored in redis) for the client identified by the id
@@ -336,6 +358,7 @@ end
 function _M.callback()
   local ok, err
   local client_data
+  local code
 
   local params = ngx.req.get_uri_args()
 
@@ -344,9 +367,9 @@ function _M.callback()
     return
   end
   
-  ok, err = _M.check_state(params.state)
+  client_data = _M.check_state(params.state)
   
-  if not ok then 
+  if not client_data then 
   -- TODO: Add debug message for ngx
   -- TODO: where do we get the redirect_uri from unless the Authorization passes it back to us?
     _M.respond_with_error(400, 'invalid_state')
@@ -359,18 +382,19 @@ function _M.callback()
     _M.redirect_with_error(client_data.redirect_uri, err, client_data.state)
     return   
   end
-
+  
+  code = ok
   ngx.header.content_type = "application/x-www-form-urlencoded"
   return ngx.redirect( client_data.redirect_uri .. "?code="..code.."&state=" .. (client_data.state or ""))
 
 end
 
 function _M.call()
-  local params = extract_params()
+  local params = _M.extract_params()
   local is_valid = _M.check_credentials(params)
 
   if is_valid then
-    get_token(params)
+    _M.get_token(params)
   else
     _M.respond_with_error(401, 'invalid_client')
     return
