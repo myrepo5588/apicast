@@ -3,6 +3,8 @@ local random = require 'resty.random'
 local ts = require 'threescale_utils'
 local cjson = require 'cjson'
 local backend_client = require ('backend_client')
+local http_authorization = require 'resty.http_authorization'
+
 -- local get_token = require 'oauth.apicast_oauth.get_token'
 local re = require 'ngx.re'
 local inspect = require 'inspect'
@@ -122,6 +124,21 @@ function _M.token_check_params(params)
     end
   end
   return true
+end
+
+function _M.get_client_credentials(params)
+  -- local auth = http_authorization.new(ngx.var.http_authorization)
+  local header_params = ngx.req.get_headers()
+  if header_params['Authorization'] then
+    params.authorization = re.split(ngx.decode_base64(re.split(header_params['Authorization']," ", 'oj')[2]),":", 'oj')
+  end
+  -- local params = {
+  --   client_id = auth.userid or req_body.client_id,
+  --   client_secret = auth.password or req_body.client_secret
+  -- }
+  params.client_id = params.authorization[1] or body_params.client_id
+  params.client_secret = params.authorization[2] or body_params.client_secret
+  return params
 end
 
 function _M.check_credentials(service, params)
@@ -282,6 +299,7 @@ end
 -- Returns the token to the client
 local function send_token(token)
   ngx.header.content_type = "application/json; charset=utf-8"
+  ngx.log(ngx.INFO, "token :" .. inspect(token))
   ngx.say(cjson.encode(token))
   ngx.exit(ngx.HTTP_OK)
 end
@@ -322,8 +340,14 @@ function _M:get_token(service)
   local res
   
   ngx.req.read_body()
-  params = ngx.req.get_post_args()
+  local params = ngx.req.get_post_args()
   ngx.log(ngx.INFO, "params :" .. inspect(params))
+  
+  local creds = _M.get_client_credentials(params)
+  
+  params.client_id = creds.client_id
+  params.client_secret = creds.client_secret
+  
   ok, err = _M.token_check_params(params)
   
   if not ok then
@@ -331,21 +355,33 @@ function _M:get_token(service)
     return
   end
   
-  res = request_token(params)
+  if params.grant_type == "authorization_code" then
+    res = request_token(params)
+    if res.status == 200 then
+      local token = res.body
+      local stored = store_token(params, token)
 
-  if res.status == 200 then
-    local token = res.body
-    local stored = store_token(params, token)
-
-    if stored.status == 200 then
-      send_token(token)
+      if stored.status == 200 then
+        send_token(token)
+      else
+        ngx.say('{"error":"'..stored.body..'"}')
+        ngx.exit(stored.status)
+      end
     else
-      ngx.say('{"error":"'..stored.body..'"}')
-      ngx.exit(stored.status)
+      _M.respond_with_error(403, err)
     end
-  else
-    _M.respond_with_error(403, err)
+  elseif params.grant_type == "client_credentials" then
+    ok = _M.check_credentials(service, params)
+    if not ok then
+      _M.respond_with_error(401, 'invalid_client')
+      return
+    end
+    
+    local token = generate_access_token(params.client_id)
+    -- ngx.log(ngx.INFO, "token :" .. inspect(token))
+    send_token(token)
   end
+
 end
 
 function _M:authorize(service)
