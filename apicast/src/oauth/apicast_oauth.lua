@@ -292,7 +292,6 @@ end
 -- Returns the token to the client
 local function send_token(token)
   ngx.header.content_type = "application/json; charset=utf-8"
-  ngx.log(ngx.INFO, "token :" .. inspect(token))
   ngx.say(cjson.encode(token))
   ngx.exit(ngx.HTTP_OK)
 end
@@ -350,6 +349,7 @@ function _M:get_token(service)
     res = request_token(params)
     if res.status == 200 then
       local token = res.body
+      ngx.log(ngx.INFO, "token value :" .. inspect(token))
       local stored = store_token(params, token)
 
       if stored.status == 200 then
@@ -433,18 +433,6 @@ function _M.callback()
   ngx.header.content_type = "application/x-www-form-urlencoded"
   return ngx.redirect( client_data.redirect_uri .. "?code="..code.."&state=" .. (client_data.state or ""))
 
-end
-
-function _M.call()
-  local params = _M.extract_params()
-  local is_valid = _M.check_credentials(params)
-
-  if is_valid then
-    _M.get_token(params)
-  else
-    _M.respond_with_error(401, 'invalid_client')
-    return
-  end
 end
 
 return _M
