@@ -5,7 +5,6 @@ local cjson = require 'cjson'
 local backend_client = require ('backend_client')
 local http_authorization = require 'resty.http_authorization'
 
--- local get_token = require 'oauth.apicast_oauth.get_token'
 local re = require 'ngx.re'
 local inspect = require 'inspect'
 local _M = {
@@ -126,18 +125,12 @@ function _M.token_check_params(params)
   return true
 end
 
-function _M.get_client_credentials(params)
-  -- local auth = http_authorization.new(ngx.var.http_authorization)
-  local header_params = ngx.req.get_headers()
-  if header_params['Authorization'] then
-    params.authorization = re.split(ngx.decode_base64(re.split(header_params['Authorization']," ", 'oj')[2]),":", 'oj')
-  end
-  -- local params = {
-  --   client_id = auth.userid or req_body.client_id,
-  --   client_secret = auth.password or req_body.client_secret
-  -- }
-  params.client_id = params.authorization[1] or body_params.client_id
-  params.client_secret = params.authorization[2] or body_params.client_secret
+function _M.get_client_credentials(req_body)
+  local auth = http_authorization.new(ngx.var.http_authorization)
+  local params = {
+    client_id = auth.userid or req_body.client_id,
+    client_secret = auth.password or req_body.client_secret
+  }
   return params
 end
 
@@ -339,9 +332,7 @@ function _M:get_token(service)
   local ok, err
   local res
   
-  ngx.req.read_body()
-  local params = ngx.req.get_post_args()
-  ngx.log(ngx.INFO, "params :" .. inspect(params))
+  local params = _M.extract_params()
   
   local creds = _M.get_client_credentials(params)
   
@@ -377,8 +368,9 @@ function _M:get_token(service)
       return
     end
     
-    local token = generate_access_token(params.client_id)
-    -- ngx.log(ngx.INFO, "token :" .. inspect(token))
+    local access_token = generate_access_token(params.client_id)
+    
+    local token = { ["access_token"] = access_token, ["token_type"] = "bearer", ["expires_in"] = 604800 }
     send_token(token)
   end
 
