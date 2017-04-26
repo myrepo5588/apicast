@@ -64,7 +64,7 @@ describe('APIcast Oauth', function()
 
       stub(ngx.req, 'get_uri_args', function() return { response_type = 'code', client_id = 'foo', redirect_uri = 'bar' } end)
 
-      assert.has_error(function() apicast_oauth.authorize(service) end, "missing oauth login url" )
+      assert.has_error(function() apicast_oauth:authorize(service) end, "missing oauth login url" )
     end)
 
     it('redirects to login when all OK', function()
@@ -77,7 +77,7 @@ describe('APIcast Oauth', function()
       stub(ngx.req, 'get_uri_args', function() return { response_type = 'code', client_id = 'foo', redirect_uri = 'bar' } end)
       stub(ngx, 'redirect')
       ngx.header = { content_type = "application/x-www-form-urlencoded" }
-      apicast_oauth.authorize(service)
+      apicast_oauth:authorize(service)
       assert.spy(ngx.redirect).was.called_with(match.is_string())
     end)
   end)
