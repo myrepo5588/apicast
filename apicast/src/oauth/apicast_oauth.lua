@@ -4,8 +4,8 @@ local ts = require 'threescale_utils'
 local cjson = require 'cjson'
 local backend_client = require ('backend_client')
 local http_authorization = require 'resty.http_authorization'
+local env = require 'resty.env'
 
-local re = require 'ngx.re'
 local inspect = require 'inspect'
 local _M = {
   _VERSION = '0.1'
@@ -34,12 +34,10 @@ end
 
 function _M.extract_params()
   local params = {}
-  local header_params = ngx.req.get_headers()
+  local auth
 
-  params.authorization = {}
-
-  if header_params['Authorization'] then
-    params.authorization = re.split(ngx.decode_base64(re.split(header_params['Authorization']," ", 'oj')[2]),":", 'oj')
+  if ngx.var.http_authorization then
+    auth = http_authorization.new(ngx.var.http_authorization)
   end
 
   local method = ngx.req.get_method()
@@ -47,12 +45,12 @@ function _M.extract_params()
     _M.respond_with_error(400, 'invalid_HTTP_method')
     return
   end
-  
+
   ngx.req.read_body()
   local body_params = ngx.req.get_post_args()
 
-  params.client_id = params.authorization[1] or body_params.client_id
-  params.client_secret = params.authorization[2] or body_params.client_secret
+  params.client_id = auth.userid or body_params.client_id
+  params.client_secret = auth.password or body_params.client_secret
 
   params.grant_type = body_params.grant_type
   params.code = body_params.code
@@ -78,13 +76,13 @@ function _M.respond_and_exit(status, body, headers)
   ngx.exit(ngx.HTTP_OK)
 end
 
-function _M.respond_with_error(status, message)
+function _M.respond_with_error(status, message, description)
 
   --TODO: as per the RFC (https://tools.ietf.org/html/rfc6749#section-5.2) return WWW-Authenticate response header if 401
   local headers = {
     ['Content-Type'] = 'application/json;charset=UTF-8'
   }
-  local err_msg = { error = message }
+  local err_msg = { error = message, error_description = description }
   local body = cjson.encode(err_msg)
   ngx.log(ngx.INFO, "error :" .. inspect(body))
   _M.respond_and_exit(status, body, headers)
@@ -125,15 +123,6 @@ function _M.token_check_params(params)
   return true
 end
 
-function _M.get_client_credentials(req_body)
-  local auth = http_authorization.new(ngx.var.http_authorization)
-  local params = {
-    client_id = auth.userid or req_body.client_id,
-    client_secret = auth.password or req_body.client_secret
-  }
-  return params
-end
-
 function _M.check_credentials(service, params)
   local backend = backend_client:new(service)
 
@@ -154,7 +143,9 @@ local function nonce(client_id)
 end
 
 local function generate_access_token(client_id)
-  return ts.sha1_digest(tostring(random.bytes(20, true)) .. client_id)
+  local token = ts.sha1_digest(tostring(random.bytes(20, true)) .. client_id)
+
+  return { ["access_token"] = token, ["token_type"] = "bearer", ["expires_in"] = env.get('APICAST_OAUTH_ACCESS_TOKEN_TTL') or 604800 }
 end
 
 local function persist_nonce(service_id, params)
@@ -164,16 +155,11 @@ local function persist_nonce(service_id, params)
   -- State value that will be shared between gateway and authorization server
   local n = nonce(params.client_id)
 
-  -- Pre-generated access token
-  --TODO: Check if we can just generate token when we need it later
-  local pre_token = generate_access_token(params.client_id)
-
   local redis_key = service_id.."#tmp_data:"..n
   local client_data = {
     client_id = params.client_id,
     redirect_uri = params.redirect_uri,
     plan_id = params.scope,
-    access_token = pre_token,
     state = client_state
   }
 
@@ -190,22 +176,25 @@ end
 
 -- Retrieve client data from Redis
 local function retrieve_client_data(service_id, params)
-
   local tmp_data = service_id .. "#tmp_data:".. params.state
+  local client_data
+  local redis = ts.connect_redis()
 
-  local red = ts.connect_redis()
-  local ok, err = red:hgetall(tmp_data)
+  if redis then
+    local ok, err = redis:hgetall(tmp_data)
 
-  if not ok then
-    ngx.log(0, "no values for tmp_data hash: ".. ts.dump(err))
-    ngx.header.content_type = "application/x-www-form-urlencoded"
-    return ngx.redirect(params.redirect_uri .. "#error=invalid_request&error_description=invalid_or_expired_state&state=" .. (params.state or ""))
+    if not ok then
+      ngx.log(0, "no values for tmp_data hash: ".. ts.dump(err))
+      ngx.header.content_type = "application/x-www-form-urlencoded"
+      return ngx.redirect(params.redirect_uri .. "#error=invalid_request&error_description=invalid_or_expired_state&state=" .. (params.state or ""))
+    end
+
+    -- Restore client data
+    client_data = redis:array_to_hash(ok)  -- restoring client data
+    -- Delete the tmp_data:
+    redis:del(tmp_data)
+    ts.release_redis(redis)
   end
-
-  -- Restore client data
-  local client_data = red:array_to_hash(ok)  -- restoring client data
-  -- Delete the tmp_data:
-  red:del(tmp_data)
 
   return client_data
 end
@@ -225,7 +214,6 @@ local function persist_code(client_data, code)
       client_id = client_data.client_id,
       client_secret = client_data.secret_id,
       redirect_uri = client_data.redirect_uri,
-      access_token = client_data.access_token,
       code = code
     })
 
@@ -278,15 +266,16 @@ function _M.check_state(state)
     local tmp_data = ngx.ctx.service.id.."#tmp_data"..state
     ok, err = redis:hgetall(tmp_data)
     redis:del(tmp_data)
-    
+
     if not ok then
       return ok, err
     end
 
     client_data = redis:array_to_hash(ok)
+    ts.release_redis(redis)
+
     return client_data
   end
-  ts.release_redis(redis)
 end
 
 -- Returns the token to the client
@@ -296,30 +285,30 @@ local function send_token(token)
   ngx.exit(ngx.HTTP_OK)
 end
 
--- Returns the access token (stored in redis) for the client identified by the id
+-- Checks the authorization code being exchanged for an access token
 -- This needs to be called within a minute of it being stored, as it expires and is deleted
-local function request_token(params)
-  local red = ts.connect_redis()
-  local ok, _ =  red:hgetall("c:".. params.code)
+local function check_code(params)
+  local redis = ts.connect_redis()
 
-  if ok[1] == nil then
-    _M.respond_with_error(403, 'expired_code')
-    return
-  else
-    local client_data = red:array_to_hash(ok)
-    params.user_id = client_data.user_id
-    if params.code == client_data.code then
-      return { ["status"] = 200, ["body"] = { ["access_token"] = client_data.access_token, ["token_type"] = "bearer", ["expires_in"] = 604800 } }
-    else
-      return false, 'invalid_authorization_code'
+  if redis then
+    local ok, _ =  redis:hgetall("c:".. params.code)
+      if ok[1] == nil then
+      _M.respond_with_error(403, 'invalid_grant', 'Authorization Code is invalid or has expired')
+      return
     end
+    ts.release_redis(redis)
+  else
+    --TODO: how do we respond if we can't connect to redis? status code and msg
+    _M.respond_with_error(500,'msg')
+    return
   end
+  return true
 end
 
--- Stores the token in 3scale. You can change the default ttl value of 604800 seconds (7 days) to your desired ttl.
+-- Stores the token in 3scale.
 local function store_token(params, token)
   local body = ts.build_query({ app_id = params.client_id, token = token.access_token, user_id = params.user_id, ttl = token.expires_in })
-  -- TODO Create a call for this ngx capture in the backend client
+  -- TODO: Create a call for this ngx capture in the backend client
   local stored = ngx.location.capture( "/_threescale/oauth_store_token", {
     method = ngx.HTTP_POST, body = body, copy_all_vars = true, ctx = ngx.ctx } )
   stored.body = stored.body or stored.status
@@ -329,51 +318,42 @@ end
 -- Get the token from Redis
 function _M:get_token(service)
   local ok, err
-  local res
-  
   local params = _M.extract_params()
-  
-  local creds = _M.get_client_credentials(params)
-  
-  params.client_id = creds.client_id
-  params.client_secret = creds.client_secret
-  
+
   ok, err = _M.token_check_params(params)
-  
+
   if not ok then
     _M.respond_with_error(400, err)
     return
   end
-  
-  if params.grant_type == "authorization_code" then
-    res = request_token(params)
-    if res.status == 200 then
-      local token = res.body
-      ngx.log(ngx.INFO, "token value :" .. inspect(token))
-      local stored = store_token(params, token)
 
-      if stored.status == 200 then
-        send_token(token)
-      else
-        ngx.say('{"error":"'..stored.body..'"}')
-        ngx.exit(stored.status)
-      end
-    else
-      _M.respond_with_error(403, err)
-    end
+  local access_token
+
+  if params.grant_type == "authorization_code" and check_code(params) then
+    -- TODO: all good - what do we do here?
   elseif params.grant_type == "client_credentials" then
     ok = _M.check_credentials(service, params)
     if not ok then
       _M.respond_with_error(401, 'invalid_client')
       return
     end
-    
-    local access_token = generate_access_token(params.client_id)
-    
-    local token = { ["access_token"] = access_token, ["token_type"] = "bearer", ["expires_in"] = 604800 }
-    send_token(token)
+  else
+    -- TODO: something whent wrong, what do we return here?
+    _M.respond_with_error(400, 'msg')
   end
 
+  access_token = generate_access_token(params.client_id)
+
+  local stored = store_token(params, access_token)
+
+  if stored.status == 200 then
+    send_token(access_token)
+    return
+  else
+    err =  '{"error":"'..stored.body..'"}'
+    _M.respond_with_error(stored.status, err)
+    return
+  end
 end
 
 function _M:authorize(service)
@@ -384,7 +364,7 @@ function _M:authorize(service)
     _M.respond_with_error(400, err)
     return
   end
-  
+
   ngx.log(ngx.INFO, "service :" .. inspect(service))
   ok = _M.check_credentials(service, params)
   if not ok then
@@ -412,27 +392,26 @@ function _M.callback()
     _M.respond_with_error(400, "invalid_request")
     return
   end
-  
+
   client_data = _M.check_state(params.state)
-  
-  if not client_data then 
+
+  if not client_data then
   -- TODO: Add debug message for ngx
   -- TODO: where do we get the redirect_uri from unless the Authorization passes it back to us?
     _M.respond_with_error(400, 'invalid_state')
     return
   end
-  
+
   ok, err = get_code(ngx.ctx.service.id, params)
 
   if not ok then
     _M.redirect_with_error(client_data.redirect_uri, err, client_data.state)
-    return   
+    return
   end
-  
+
   code = ok
   ngx.header.content_type = "application/x-www-form-urlencoded"
   return ngx.redirect( client_data.redirect_uri .. "?code="..code.."&state=" .. (client_data.state or ""))
-
 end
 
 return _M
