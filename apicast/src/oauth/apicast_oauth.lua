@@ -76,13 +76,13 @@ function _M.respond_and_exit(status, body, headers)
   ngx.exit(ngx.HTTP_OK)
 end
 
-function _M.respond_with_error(status, message)
+function _M.respond_with_error(status, message, description)
 
   --TODO: as per the RFC (https://tools.ietf.org/html/rfc6749#section-5.2) return WWW-Authenticate response header if 401
   local headers = {
     ['Content-Type'] = 'application/json;charset=UTF-8'
   }
-  local err_msg = { error = message }
+  local err_msg = { error = message, error_description = description }
   local body = cjson.encode(err_msg)
   ngx.log(ngx.INFO, "error :" .. inspect(body))
   _M.respond_and_exit(status, body, headers)
