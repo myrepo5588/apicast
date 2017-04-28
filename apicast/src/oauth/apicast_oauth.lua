@@ -4,6 +4,7 @@ local ts = require 'threescale_utils'
 local cjson = require 'cjson'
 local backend_client = require ('backend_client')
 local http_authorization = require 'resty.http_authorization'
+local env = require 'resty.env'
 
 local re = require 'ngx.re'
 local inspect = require 'inspect'
@@ -154,7 +155,9 @@ local function nonce(client_id)
 end
 
 local function generate_access_token(client_id)
-  return ts.sha1_digest(tostring(random.bytes(20, true)) .. client_id)
+  local token = ts.sha1_digest(tostring(random.bytes(20, true)) .. client_id)
+
+  return { ["access_token"] = token, ["token_type"] = "bearer", ["expires_in"] = env.get('APICAST_OAUTH_ACCESS_TOKEN_TTL') or 604800 }
 end
 
 local function persist_nonce(service_id, params)
@@ -164,16 +167,11 @@ local function persist_nonce(service_id, params)
   -- State value that will be shared between gateway and authorization server
   local n = nonce(params.client_id)
 
-  -- Pre-generated access token
-  --TODO: Check if we can just generate token when we need it later
-  local pre_token = generate_access_token(params.client_id)
-
   local redis_key = service_id.."#tmp_data:"..n
   local client_data = {
     client_id = params.client_id,
     redirect_uri = params.redirect_uri,
     plan_id = params.scope,
-    access_token = pre_token,
     state = client_state
   }
 
@@ -225,7 +223,6 @@ local function persist_code(client_data, code)
       client_id = client_data.client_id,
       client_secret = client_data.secret_id,
       redirect_uri = client_data.redirect_uri,
-      access_token = client_data.access_token,
       code = code
     })
 
@@ -316,7 +313,7 @@ local function request_token(params)
   end
 end
 
--- Stores the token in 3scale. You can change the default ttl value of 604800 seconds (7 days) to your desired ttl.
+-- Stores the token in 3scale.
 local function store_token(params, token)
   local body = ts.build_query({ app_id = params.client_id, token = token.access_token, user_id = params.user_id, ttl = token.expires_in })
   -- TODO Create a call for this ngx capture in the backend client
@@ -329,51 +326,42 @@ end
 -- Get the token from Redis
 function _M:get_token(service)
   local ok, err
-  local res
-  
   local params = _M.extract_params()
-  
-  local creds = _M.get_client_credentials(params)
-  
-  params.client_id = creds.client_id
-  params.client_secret = creds.client_secret
-  
+
   ok, err = _M.token_check_params(params)
-  
+
   if not ok then
     _M.respond_with_error(400, err)
     return
   end
-  
-  if params.grant_type == "authorization_code" then
-    res = request_token(params)
-    if res.status == 200 then
-      local token = res.body
-      ngx.log(ngx.INFO, "token value :" .. inspect(token))
-      local stored = store_token(params, token)
 
-      if stored.status == 200 then
-        send_token(token)
-      else
-        ngx.say('{"error":"'..stored.body..'"}')
-        ngx.exit(stored.status)
-      end
-    else
-      _M.respond_with_error(403, err)
-    end
+  local access_token
+
+  if params.grant_type == "authorization_code" and check_code(params) then
+    -- TODO: all good - what do we do here?
   elseif params.grant_type == "client_credentials" then
     ok = _M.check_credentials(service, params)
     if not ok then
       _M.respond_with_error(401, 'invalid_client')
       return
     end
-    
-    local access_token = generate_access_token(params.client_id)
-    
-    local token = { ["access_token"] = access_token, ["token_type"] = "bearer", ["expires_in"] = 604800 }
-    send_token(token)
+  else
+    -- TODO: something whent wrong, what do we return here?
+    _M.respond_with_error(400, 'msg')
   end
 
+  access_token = generate_access_token(params.client_id)
+
+  local stored = store_token(params, access_token)
+
+  if stored.status == 200 then
+    send_token(access_token)
+    return
+  else
+    err =  '{"error":"'..stored.body..'"}'
+    _M.respond_with_error(stored.status, err)
+    return
+  end
 end
 
 function _M:authorize(service)
