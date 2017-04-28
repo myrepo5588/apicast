@@ -302,12 +302,13 @@ local function check_code(params)
     _M.respond_with_error(500,'msg')
     return
   end
+  return true
 end
 
 -- Stores the token in 3scale.
 local function store_token(params, token)
   local body = ts.build_query({ app_id = params.client_id, token = token.access_token, user_id = params.user_id, ttl = token.expires_in })
-  -- TODO Create a call for this ngx capture in the backend client
+  -- TODO: Create a call for this ngx capture in the backend client
   local stored = ngx.location.capture( "/_threescale/oauth_store_token", {
     method = ngx.HTTP_POST, body = body, copy_all_vars = true, ctx = ngx.ctx } )
   stored.body = stored.body or stored.status
@@ -363,7 +364,7 @@ function _M:authorize(service)
     _M.respond_with_error(400, err)
     return
   end
-  
+
   ngx.log(ngx.INFO, "service :" .. inspect(service))
   ok = _M.check_credentials(service, params)
   if not ok then
@@ -391,27 +392,26 @@ function _M.callback()
     _M.respond_with_error(400, "invalid_request")
     return
   end
-  
+
   client_data = _M.check_state(params.state)
-  
-  if not client_data then 
+
+  if not client_data then
   -- TODO: Add debug message for ngx
   -- TODO: where do we get the redirect_uri from unless the Authorization passes it back to us?
     _M.respond_with_error(400, 'invalid_state')
     return
   end
-  
+
   ok, err = get_code(ngx.ctx.service.id, params)
 
   if not ok then
     _M.redirect_with_error(client_data.redirect_uri, err, client_data.state)
-    return   
+    return
   end
-  
+
   code = ok
   ngx.header.content_type = "application/x-www-form-urlencoded"
   return ngx.redirect( client_data.redirect_uri .. "?code="..code.."&state=" .. (client_data.state or ""))
-
 end
 
 return _M
