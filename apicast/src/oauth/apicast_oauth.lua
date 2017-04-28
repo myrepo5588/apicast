@@ -6,7 +6,6 @@ local backend_client = require ('backend_client')
 local http_authorization = require 'resty.http_authorization'
 local env = require 'resty.env'
 
-local re = require 'ngx.re'
 local inspect = require 'inspect'
 local _M = {
   _VERSION = '0.1'
@@ -35,12 +34,10 @@ end
 
 function _M.extract_params()
   local params = {}
-  local header_params = ngx.req.get_headers()
+  local auth
 
-  params.authorization = {}
-
-  if header_params['Authorization'] then
-    params.authorization = re.split(ngx.decode_base64(re.split(header_params['Authorization']," ", 'oj')[2]),":", 'oj')
+  if ngx.var.http_authorization then
+    auth = http_authorization.new(ngx.var.http_authorization)
   end
 
   local method = ngx.req.get_method()
@@ -48,12 +45,12 @@ function _M.extract_params()
     _M.respond_with_error(400, 'invalid_HTTP_method')
     return
   end
-  
+
   ngx.req.read_body()
   local body_params = ngx.req.get_post_args()
 
-  params.client_id = params.authorization[1] or body_params.client_id
-  params.client_secret = params.authorization[2] or body_params.client_secret
+  params.client_id = auth.userid or body_params.client_id
+  params.client_secret = auth.password or body_params.client_secret
 
   params.grant_type = body_params.grant_type
   params.code = body_params.code
@@ -124,15 +121,6 @@ function _M.token_check_params(params)
     end
   end
   return true
-end
-
-function _M.get_client_credentials(req_body)
-  local auth = http_authorization.new(ngx.var.http_authorization)
-  local params = {
-    client_id = auth.userid or req_body.client_id,
-    client_secret = auth.password or req_body.client_secret
-  }
-  return params
 end
 
 function _M.check_credentials(service, params)
@@ -297,7 +285,7 @@ local function send_token(token)
   ngx.exit(ngx.HTTP_OK)
 end
 
--- Returns the access token (stored in redis) for the client identified by the id
+-- Checks the authorization code being exchanged for an access token
 -- This needs to be called within a minute of it being stored, as it expires and is deleted
 local function check_code(params)
   local redis = ts.connect_redis()
