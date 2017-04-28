@@ -188,22 +188,25 @@ end
 
 -- Retrieve client data from Redis
 local function retrieve_client_data(service_id, params)
-
   local tmp_data = service_id .. "#tmp_data:".. params.state
+  local client_data
+  local redis = ts.connect_redis()
 
-  local red = ts.connect_redis()
-  local ok, err = red:hgetall(tmp_data)
+  if redis then
+    local ok, err = redis:hgetall(tmp_data)
 
-  if not ok then
-    ngx.log(0, "no values for tmp_data hash: ".. ts.dump(err))
-    ngx.header.content_type = "application/x-www-form-urlencoded"
-    return ngx.redirect(params.redirect_uri .. "#error=invalid_request&error_description=invalid_or_expired_state&state=" .. (params.state or ""))
+    if not ok then
+      ngx.log(0, "no values for tmp_data hash: ".. ts.dump(err))
+      ngx.header.content_type = "application/x-www-form-urlencoded"
+      return ngx.redirect(params.redirect_uri .. "#error=invalid_request&error_description=invalid_or_expired_state&state=" .. (params.state or ""))
+    end
+
+    -- Restore client data
+    client_data = redis:array_to_hash(ok)  -- restoring client data
+    -- Delete the tmp_data:
+    redis:del(tmp_data)
+    ts.release_redis(redis)
   end
-
-  -- Restore client data
-  local client_data = red:array_to_hash(ok)  -- restoring client data
-  -- Delete the tmp_data:
-  red:del(tmp_data)
 
   return client_data
 end
@@ -275,15 +278,16 @@ function _M.check_state(state)
     local tmp_data = ngx.ctx.service.id.."#tmp_data"..state
     ok, err = redis:hgetall(tmp_data)
     redis:del(tmp_data)
-    
+
     if not ok then
       return ok, err
     end
 
     client_data = redis:array_to_hash(ok)
+    ts.release_redis(redis)
+
     return client_data
   end
-  ts.release_redis(redis)
 end
 
 -- Returns the token to the client
@@ -295,21 +299,20 @@ end
 
 -- Returns the access token (stored in redis) for the client identified by the id
 -- This needs to be called within a minute of it being stored, as it expires and is deleted
-local function request_token(params)
-  local red = ts.connect_redis()
-  local ok, _ =  red:hgetall("c:".. params.code)
+local function check_code(params)
+  local redis = ts.connect_redis()
 
-  if ok[1] == nil then
-    _M.respond_with_error(403, 'expired_code')
-    return
-  else
-    local client_data = red:array_to_hash(ok)
-    params.user_id = client_data.user_id
-    if params.code == client_data.code then
-      return { ["status"] = 200, ["body"] = { ["access_token"] = client_data.access_token, ["token_type"] = "bearer", ["expires_in"] = 604800 } }
-    else
-      return false, 'invalid_authorization_code'
+  if redis then
+    local ok, _ =  redis:hgetall("c:".. params.code)
+      if ok[1] == nil then
+      _M.respond_with_error(403, 'invalid_grant', 'Authorization Code is invalid or has expired')
+      return
     end
+    ts.release_redis(redis)
+  else
+    --TODO: how do we respond if we can't connect to redis? status code and msg
+    _M.respond_with_error(500,'msg')
+    return
   end
 end
 
