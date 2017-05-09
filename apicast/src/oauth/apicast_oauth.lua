@@ -18,7 +18,8 @@ _M.params = {
   grant_type = {
     ['authorization_code'] = {'client_id','redirect_uri','code'},
     ['password'] = {'client_id','client_secret','username','password'},
-    ['client_credentials'] = {'client_id','client_secret'}
+    ['client_credentials'] = {'client_id','client_secret'},
+    ['implicit'] = {'client_id','redirect_uri'}
   },
   response_type = {
     ['code'] = {'client_id','redirect_uri'},
@@ -245,8 +246,7 @@ local function store_code(client_data, params, code)
 end
 
 -- Get Authorization Code
-local function get_code(service_id, params)
-  local client_data = retrieve_client_data(service_id, params)
+local function get_code(client_data, params)
   local code = generate_code(client_data)
 
   local stored = store_code(client_data, params, code)
@@ -346,10 +346,8 @@ function _M:get_token(service)
     return
   end
 
-  local access_token
-
-  if params.grant_type == "authorization_code" and check_code(params) then
-    -- TODO: all good - what do we do here?
+  if params.grant_type == "authorization_code" then
+    check_code(params)
   elseif params.grant_type == "client_credentials" then
     ok = _M.check_credentials(service, params)
     if not ok then
