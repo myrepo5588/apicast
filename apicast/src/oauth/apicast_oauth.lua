@@ -160,7 +160,8 @@ local function persist_nonce(service_id, params)
     client_id = params.client_id,
     redirect_uri = params.redirect_uri,
     plan_id = params.scope,
-    state = client_state
+    state = client_state,
+    grant = params.response_type
   }
 
   local redis = ts.connect_redis()
@@ -315,10 +316,28 @@ local function store_token(params, token)
   return { ["status"] = stored.status , ["body"] = stored.body }
 end
 
+-- Request the token
+local function request_token(params)
+  local err
+  local access_token = generate_access_token(params.client_id)
+
+  local stored = store_token(params, access_token)
+
+  if stored.status == 200 then
+    send_token(access_token)
+    return
+  else
+    err =  '{"error":"'..stored.body..'"}'
+    _M.respond_with_error(stored.status, err)
+    return
+  end
+end
+
 -- Get the token from Redis
 function _M:get_token(service)
   local ok, err
   local params = _M.extract_params()
+  ngx.log(ngx.INFO, "params: " .. inspect(params))
 
   ok, err = _M.token_check_params(params)
 
@@ -342,30 +361,19 @@ function _M:get_token(service)
     _M.respond_with_error(400, 'msg')
   end
 
-  access_token = generate_access_token(params.client_id)
-
-  local stored = store_token(params, access_token)
-
-  if stored.status == 200 then
-    send_token(access_token)
-    return
-  else
-    err =  '{"error":"'..stored.body..'"}'
-    _M.respond_with_error(stored.status, err)
-    return
-  end
+  request_token(params)
 end
 
 function _M:authorize(service)
+  local ok, err
   local params = ngx.req.get_uri_args()
 
-  local ok, err = _M.check_params(params)
+  ok, err = _M.check_params(params)
   if not ok then
     _M.respond_with_error(400, err)
     return
   end
 
-  ngx.log(ngx.INFO, "service :" .. inspect(service))
   ok = _M.check_credentials(service, params)
   if not ok then
     _M.respond_with_error(401, 'invalid_client')
@@ -393,25 +401,34 @@ function _M.callback()
     return
   end
 
-  client_data = _M.check_state(params.state)
+  ok = _M.check_state(params.state)
+  
+  if not ok then
+    -- TODO: Add debug message for ngx
+    _M.respond_with_error(400, 'invalid_state')
+    return
+  end
+  
+  client_data = retrieve_client_data(ngx.ctx.service.id, params)
 
-  if not client_data then
+  if client_data.grant == 'code' then
+    ok, err = get_code(client_data, params)
+    if not ok then
+      _M.redirect_with_error(client_data.redirect_uri, err, client_data.state)
+      return
+    end
+
+    code = ok
+    ngx.header.content_type = "application/x-www-form-urlencoded"
+    return ngx.redirect( client_data.redirect_uri .. "?code="..code.."&state=" .. (client_data.state or ""))
+  elseif client_data.grant == 'token' then
+    request_token(client_data)
+  else
   -- TODO: Add debug message for ngx
   -- TODO: where do we get the redirect_uri from unless the Authorization passes it back to us?
     _M.respond_with_error(400, 'invalid_state')
     return
   end
-
-  ok, err = get_code(ngx.ctx.service.id, params)
-
-  if not ok then
-    _M.redirect_with_error(client_data.redirect_uri, err, client_data.state)
-    return
-  end
-
-  code = ok
-  ngx.header.content_type = "application/x-www-form-urlencoded"
-  return ngx.redirect( client_data.redirect_uri .. "?code="..code.."&state=" .. (client_data.state or ""))
 end
 
 return _M
