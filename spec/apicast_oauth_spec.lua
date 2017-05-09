@@ -60,7 +60,7 @@ describe('APIcast Oauth', function()
       local service = { id = 123 }
 
       stub(_M, 'check_credentials', function () return true end)
-      stub(_M, 'authorize_check_params', function () return true end)
+      stub(_M, 'check_params', function () return true end)
 
       stub(ngx.req, 'get_uri_args', function() return { response_type = 'code', client_id = 'foo', redirect_uri = 'bar' } end)
 
@@ -72,7 +72,7 @@ describe('APIcast Oauth', function()
       local service = { id = 1234, oauth_login_url = "http://example.com/consent"}
 
       stub(_M, 'check_credentials', function () return true end)
-      stub(_M, 'authorize_check_params', function () return true end)
+      stub(_M, 'check_params', function () return true end)
 
       stub(ngx.req, 'get_uri_args', function() return { response_type = 'code', client_id = 'foo', redirect_uri = 'bar' } end)
       stub(ngx, 'redirect')
