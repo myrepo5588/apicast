@@ -16,14 +16,14 @@ local mt = { __index = _M }
 -- Required params for each grant type and response type.
 _M.params = {
   grant_type = {
-    ['authorization_code'] = {'client_id','redirect_uri','code'},
-    ['password'] = {'client_id','client_secret','username','password'},
-    ['client_credentials'] = {'client_id','client_secret'},
-    ['implicit'] = {'client_id','redirect_uri'}
+    authorization_code = {'client_id','redirect_uri','code'},
+    password = {'client_id','client_secret','username','password'},
+    client_credentials = {'client_id','client_secret'},
+    implicit = {'client_id','redirect_uri'}
   },
   response_type = {
-    ['code'] = {'client_id','redirect_uri'},
-    ['token'] = {'client_id','redirect_uri'}
+    code = {'client_id','redirect_uri'},
+    token = {'client_id','redirect_uri'}
   }
 }
 
@@ -146,7 +146,7 @@ end
 local function generate_access_token(client_id)
   local token = ts.sha1_digest(tostring(random.bytes(20, true)) .. client_id)
 
-  return { ["access_token"] = token, ["token_type"] = "bearer", ["expires_in"] = env.get('APICAST_OAUTH_ACCESS_TOKEN_TTL') or 604800 }
+  return { access_token = token, token_type = "bearer", expires_in = env.get('APICAST_OAUTH_ACCESS_TOKEN_TTL') or 604800 }
 end
 
 local function persist_nonce(service_id, params)
@@ -303,7 +303,7 @@ local function check_code(params)
     _M.respond_with_error(500,'msg')
     return
   end
-  return true
+  return
 end
 
 -- Stores the token in 3scale.
@@ -313,7 +313,7 @@ local function store_token(params, token)
   local stored = ngx.location.capture( "/_threescale/oauth_store_token", {
     method = ngx.HTTP_POST, body = body, copy_all_vars = true, ctx = ngx.ctx } )
   stored.body = stored.body or stored.status
-  return { ["status"] = stored.status , ["body"] = stored.body }
+  return { status = stored.status , body = stored.body }
 end
 
 -- Request the token
