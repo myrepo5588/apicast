@@ -21,6 +21,8 @@ local env = require 'resty.env'
 local resty_url = require 'resty.url'
 local util = require 'util'
 
+local url_rewriting = env.enabled('APICAST_URL_REWRITING')
+
 local mt = { __index = _M, __tostring = function() return 'Configuration' end }
 
 local function map(func, tbl)
@@ -39,21 +41,52 @@ local function regexpify(path)
   return path:gsub('?.*', ''):gsub("{.-}", '([\\w_.-]+)'):gsub("%.", "\\.")
 end
 
+function _M.get_rewrite_url(rule, params)
+
+  local rewrite_url = rule.redirect_url
+  if not rewrite_url then return nil end
+
+  -- fill the wildcard with captures
+  for param, value in pairs(params) do
+    local wildcard = '{'..param..'}'
+    rewrite_url = rewrite_url:gsub(wildcard, value)
+  end
+
+  -- merge the query parameters from the request and the rewrite_url of the rule
+  local rule_query = re.split(rewrite_url,'\\?','oj')[2]
+  local req_query = ngx.var.args or ''
+
+  if req_query ~= '' then
+    if rule_query == nil or rule_query == '' then
+      rewrite_url = rewrite_url .. '?' .. req_query
+    else
+      rewrite_url = rewrite_url .. '&' .. req_query
+    end
+  end
+
+  return rewrite_url
+end
+
 local function check_rule(req, rule, usage_t, matched_rules, params)
+  local rewrite_url = nil
+
   local pattern = rule.regexpified_pattern
   local match = re_match(req.path, format("^%s", pattern), 'oj')
 
   if match and req.method == rule.method then
     local args = req.args
 
-    if rule.querystring_params(args) then -- may return an empty table
+    if rule.querystring_params(args) then
       local system_name = rule.system_name
-      -- FIXME: this had no effect, what is it supposed to do?
-      -- when no querystringparams
-      -- in the rule. it's fine
-      -- for i,p in ipairs(rule.parameters or {}) do
-      --   param[p] = match[i]
-      -- end
+      
+      if url_rewriting then
+        local parameters = {} -- parameters from wildcards
+        -- Extracting path parameters matching wildcards
+        for i,p in ipairs(rule.parameters or {}) do
+          parameters[p] = match[i]
+        end
+        rewrite_url = _M.get_rewrite_url(rule, parameters)
+      end
 
       local value = set_or_inc(usage_t, system_name, rule.delta)
 
@@ -62,6 +95,7 @@ local function check_rule(req, rule, usage_t, matched_rules, params)
       insert(matched_rules, rule.pattern)
     end
   end
+  return rewrite_url
 end
 
 local function get_auth_params(method)
@@ -205,13 +239,20 @@ function _M.parse_service(service)
         local args = get_auth_params(method)
 
         ngx.log(ngx.DEBUG, '[mapping] service ', config.id, ' has ', #config.rules, ' rules')
+        
+        -- Only for URL rewriting feature:
+        -- Stores the rewrite_urls taking into account the wildcards values
+        local rewrite_urls = {}
 
         for i = 1, #rules do
-          check_rule({path=path, method=method, args=args}, rules[i], usage_t, matched_rules, params)
+          local rewrite_url = check_rule({path=path, method=method, args=args}, rules[i], usage_t, matched_rules, params)
+          if rewrite_url then
+            insert(rewrite_urls, rewrite_url)
+          end
         end
 
         -- if there was no match, usage is set to nil and it will respond a 404, this behavior can be changed
-        return usage_t, concat(matched_rules, ", "), params
+        return usage_t, concat(matched_rules, ", "), params, rewrite_urls
       end,
       rules = map(function(proxy_rule)
         local querystring_parameters = hash_to_array(proxy_rule.querystring_parameters)
@@ -225,7 +266,8 @@ function _M.parse_service(service)
             return check_querystring_params(querystring_parameters, args)
           end,
           system_name = proxy_rule.metric_system_name or error('missing metric name of rule ' .. inspect(proxy_rule)),
-          delta = proxy_rule.delta
+          delta = proxy_rule.delta,
+          redirect_url = proxy_rule.redirect_url
         }
       end, proxy.proxy_rules or {}),
 
