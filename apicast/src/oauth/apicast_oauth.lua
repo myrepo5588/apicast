@@ -117,7 +117,7 @@ function _M.token_check_params(params)
   if not required_params[grant_type] then return false, 'unsupported_grant_type' end
 
   for _,v in ipairs(required_params[grant_type]) do
-    if not params[v] then
+    if (params[v] == "" or params[v] == nil) or not params[v] then
       return false, 'invalid_request'
     end
   end
@@ -134,7 +134,6 @@ function _M.check_credentials(service, params)
     }
 
   local res = backend:authorize(args)
-
   return res.status == 200
 end
 
@@ -144,7 +143,7 @@ local function nonce(client_id)
 end
 
 local function generate_access_token(client_id)
-  local token = ts.sha1_digest(tostring(random.bytes(20, true)) .. client_id)
+    local token = ts.sha1_digest(tostring(random.bytes(20, true)) .. client_id)
 
   return { access_token = token, token_type = "bearer", expires_in = env.get('APICAST_OAUTH_ACCESS_TOKEN_TTL') or 604800 }
 end
