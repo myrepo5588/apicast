@@ -67,12 +67,20 @@ workflows:
   version: 2
   build:
     jobs:
-      - build
-      - s2i-runtime
-      - s2i-builder
+      - build: &git-tags
+          filters:
+            tags:
+              only: /.*/
+      - s2i-runtime:
+          <<: *git-tags
+      - s2i-builder:
+          <<: *git-tags
       - deploy:
           context: org-global
           requires:
             - build
             - s2i-runtime
             - s2i-builder
+          filters:
+            tags:
+              only: /^v\d+\..+/
