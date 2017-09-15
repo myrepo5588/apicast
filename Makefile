@@ -113,11 +113,10 @@ tmp:
 	mkdir -p $@
 
 profile: tmp
-	bin/apicast -s stop -p tmp/apicast.pid || true
+	- @bin/apicast -s stop -p tmp/apicast.pid 2> /dev/null
 	bin/apicast -m off -d -p tmp/apicast.pid
 	lj-lua-stacks.sxx --skip-badvars -x $(shell cat tmp/apicast.pid) --arg time=5
-	bin/apicast -s stop -p tmp/apicast.pid || true
-
+	- @bin/apicast -s stop -p tmp/apicast.pid 2> /dev/null
 
 dependencies:
 	luarocks make apicast/*.rockspec
