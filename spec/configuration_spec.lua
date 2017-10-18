@@ -135,6 +135,7 @@ describe('Configuration object', function()
       local rule = { redirect_url = 'http://foo.bar/api/collection/{id}/item/{code}'}
       local params = { id = 'one', code = 'two' }
       ngx.var = { args = nil }
+      ngx.req.get_uri_args = function() return {} end
       assert.equal('http://foo.bar/api/collection/one/item/two', get_rewrite_url(rule, params))
     end)
 
@@ -142,6 +143,7 @@ describe('Configuration object', function()
       local rule = { redirect_url = 'http://foo.bar/api/collection/id?q=query'}
       local params = {}
       ngx.var = { args = 'param1=value1&param2=value2' }
+      ngx.req.get_uri_args = function() return { param1 = 'value1', param2 = 'value2' } end
       assert.equal('http://foo.bar/api/collection/id?q=query&param1=value1&param2=value2', get_rewrite_url(rule, params))
     end)
 
@@ -149,6 +151,7 @@ describe('Configuration object', function()
       local rule = { redirect_url = 'http://foo.bar/api/collection/id'}
       local params = {}
       ngx.var = { args = 'param1=value1&param2=value2' }
+      ngx.req.get_uri_args = function() return { param1 = 'value1', param2 = 'value2' } end
       assert.equal('http://foo.bar/api/collection/id?param1=value1&param2=value2', get_rewrite_url(rule, params))
     end)
 
@@ -156,6 +159,7 @@ describe('Configuration object', function()
       local rule = { redirect_url = 'http://foo.bar/api/collection/id?q=query'}
       local params = {}
       ngx.var = { args = nil }
+      ngx.req.get_uri_args = function() return {} end
       assert.equal('http://foo.bar/api/collection/id?q=query', get_rewrite_url(rule, params))
     end)
   end)
