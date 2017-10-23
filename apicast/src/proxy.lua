@@ -269,6 +269,7 @@ function _M.get_upstream(service)
     url[4], url[5] or resty_url.default_port(url[1]), url[6] or ''
 
   return {
+    scheme = scheme,
     server = host,
     host = service.hostname_rewrite or host,
     uri  = scheme .. '://upstream' .. path,
@@ -285,16 +286,29 @@ function _M.set_upstream(service)
   ngx.req.set_header('Host', upstream.host or ngx.var.host)
 end
 
-function _M.set_upsteam_by_url(urls)
-  -- Set the first matched rewrite_url (if only one mapping rule is matched, there will be only one)
-  -- This method can be overriden using custom_config to apply a different logic for selecting
-  -- the desired redirect URL if there are several
+-- Set the first matched rewrite_url (if only one mapping rule is matched, there will be only one)
+-- This method can be overriden to apply a different logic for selecting
+-- the desired redirect URL if there are several
+-- In case the url is empty or nil, the default APIcast behavior is used
+-- (Private Base URL + the request path)
+function _M.set_upsteam_by_url(service, urls)
   local url = urls[1]
-  url = resty_url.split(url) or empty
-  local scheme = url[1] or 'http'
-  local host, port, path =
-    url[4], url[5] or resty_url.default_port(url[1]), url[6] or ''
-  port = tonumber(port)
+  local scheme, host, port, path
+
+  if url then
+    url = resty_url.split(url) or empty
+    scheme = url[1] or 'http'
+    host, port, path =
+      url[4], url[5] or resty_url.default_port(url[1]), url[6] or ''
+    port = tonumber(port)
+  else
+    local upstream = _M.get_upstream(service)
+    scheme = upstream.scheme
+    host = upstream.host
+    port = upstream.port
+    path = ''
+  end
+
   local uri = scheme .. '://upstream' .. path
 
   ngx.ctx.upstream = resty_resolver:instance():get_servers(host, { port = port })
@@ -376,7 +390,7 @@ function _M:access(service)
   -- Only for URL redirect feature:
   -- set API upstream and Host header using the rewrite_urls extracted from the mapping rules
   if url_rewriting then
-    _M.set_upsteam_by_url(rewrite_urls)
+    _M.set_upsteam_by_url(service, rewrite_urls)
   end
 
   local cached_key = { service.id }

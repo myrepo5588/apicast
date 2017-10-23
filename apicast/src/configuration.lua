@@ -45,7 +45,7 @@ end
 function _M.get_rewrite_url(rule, params)
 
   local rewrite_url = rule.redirect_url
-  if not rewrite_url then return nil end
+  if not rewrite_url or rewrite_url == "" then return nil end
 
   -- fill the wildcard with captures
   for param, value in pairs(params) do
