@@ -59,8 +59,8 @@ function _M.get_rewrite_url(rule, params)
   local req_query = ngx.var.args or ''
 
   -- remove the query arg from the original request, if it is present in the rewrite URL
-  for k,v in pairs(args) do
-    local param = format("%s=",k)
+  for key in pairs(args) do
+    local param = format("%s=",key)
     local m = find(rewrite_url, param)
     if m then
       param = (param..'[^&]+&?')
@@ -85,9 +85,6 @@ local function hash_to_array(hash)
 end
 
 local regex_variable = '\\{[-\\w_]+\\}'
-local function query_param_regex(param)
-
-end
 
 local function check_querystring_params(querystring_parameters, args)
   local params = hash_to_array(querystring_parameters)
@@ -102,7 +99,7 @@ local function check_querystring_params(querystring_parameters, args)
     local m, err = re_match(expected, regex_variable, 'oj')
     local value = args[param]
 
-    -- query parameter value is a defined as wildcard 
+    -- query parameter value is a defined as wildcard
     if m then
       if not value then -- regex variable have to have some value
         ngx.log(ngx.DEBUG, 'check query params ', param, ' value missing ', expected)
@@ -145,7 +142,7 @@ local function check_rule(req, rule, usage_t, matched_rules, params)
 
     if querystring_check_ok then
       local system_name = rule.system_name
-      
+
       if url_rewriting then
 
         local parameters = {} -- parameters from wildcards
@@ -271,7 +268,7 @@ function _M.parse_service(service)
         local args = get_params(method)
 
         ngx.log(ngx.DEBUG, '[mapping] service ', config.id, ' has ', #config.rules, ' rules')
-        
+
         -- Only for URL rewriting feature:
         -- Stores the rewrite_urls taking into account the wildcards values
         local rewrite_urls = {}
