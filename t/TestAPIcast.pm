@@ -1,6 +1,7 @@
 package TestAPIcast;
 use strict;
 use warnings FATAL => 'all';
+no warnings qw(redefine);
 use v5.10.1;
 
 use Test::Nginx::Socket::Lua -Base;
@@ -69,6 +70,12 @@ sub Test::Base::Filter::dns {
     }
 
     return $dns->(@$input)
+}
+
+sub Test::Nginx::Util::write_config_file ($$) {
+    my ($block, $config) = @_;
+
+    # FIXME: run bin/apicast to generate configuration
 }
 
 1;
