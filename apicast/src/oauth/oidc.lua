@@ -9,6 +9,9 @@ local len = string.len
 local ngx_now = ngx.now
 local format = string.format
 
+local env = require 'resty.env'
+local end_user_plans = env.get('APICAST_END_USER_PLANS')
+
 local _M = {
   cache_size = 10000,
 }
@@ -108,6 +111,7 @@ local function parse_and_verify_token(self, jwt_token)
 
   ngx.log(ngx.DEBUG, 'adding JWT to cache ', cache_key)
   local ttl = timestamp_to_seconds_from_now(jwt_obj.payload.exp, self.clock)
+  local user_id = jwt_obj.payload.sub
   cache:set(cache_key, jwt_obj, ttl)
 
   return jwt_obj
@@ -115,6 +119,8 @@ end
 
 
 function _M:transform_credentials(credentials)
+  local user_id
+  local app_key
   local jwt_obj, err = parse_and_verify_token(self, credentials.access_token)
 
   if err then
@@ -127,6 +133,14 @@ function _M:transform_credentials(credentials)
   local payload = jwt_obj.payload
 
   local app_id = payload.azp or payload.aud
+  if end_user_plans then
+    local user_field = end_user_plans
+    ngx.log(ngx.DEBUG, "--------USER_FIELD--------- : ", user_field)
+    user_id = payload[user_field]
+    
+    --- following line is hardcoded only to get around an open issue in backend, this would obviously be removed once fixed.
+    app_key = "7838eb2d318791196b67104d503ccd7e"
+  end
   local ttl = timestamp_to_seconds_from_now(payload.exp)
 
 
@@ -142,7 +156,7 @@ function _M:transform_credentials(credentials)
   -- OAuth2 credentials for OIDC
   -- @field app_id Client id
   -- @table credentials_oauth
-  return { app_id = app_id }, ttl
+  return { app_id = app_id, user_id = user_id, app_key = app_key }, ttl
 end
 
 
