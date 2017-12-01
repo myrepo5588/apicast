@@ -17,6 +17,7 @@ local pairs = pairs
 local ipairs = ipairs
 local tostring = tostring
 local tonumber = tonumber
+local format = string.format
 local insert = table.insert
 local concat = table.concat
 local re = require('ngx.re')
@@ -126,19 +127,63 @@ function _M:add(env)
         return nil, 'no configuration found'
     end
 
-    local config = loadfile(path, 't', {
-        print = print, inspect = require('inspect'), context = self._context,
-        tonumber = tonumber, tostring = tostring,
-        pcall = pcall, require = require, assert = assert, error = error,
-    })
+    local f = function()
+        local function require(modname)
+            local package = package
+            local mod = package.loaded[modname]
 
-    if not config then
-        return nil, 'invalid config'
+            if mod then return mod end
+
+            local loader, file, err, ret
+
+            for i=1, #package.searchers do
+                ret, err = package.searchers[i](modname)
+
+                if type(ret) == 'function' then
+                    loader = ret
+                    file = err
+                    break
+                elseif type(ret) == 'string' then
+                    err = ret
+                end
+            end
+
+            if not loader then error(err or format("module '%s' not found\n", modname)) end
+
+            mod = loader(modname, file)
+
+            if mod ~= nil then
+                package.loaded[modname] = mod
+            else
+                package.loaded[modname] = true
+            end
+
+            return package.loaded[modname]
+        end
+        local inspect = require('inspect')
+
+        local env = {
+            print = print, inspect = inspect, context = self._context,
+            tonumber = tonumber, tostring = tostring, package = { searchers = {}, loaded = {} },
+            pcall = pcall, require = require, assert = assert, error = error,
+        }
+
+        env._G = env
+
+        setfenv(require, env)
+
+        local config = loadfile(path, 't', env)
+
+        if not config then
+            return nil, 'invalid config'
+        end
+
+        return config()
     end
 
     self.loaded[path] = true
 
-    self._context = linked_list.readonly(config(), self._context)
+    self._context = linked_list.readonly(f(), self._context)
 
     return true
 end
