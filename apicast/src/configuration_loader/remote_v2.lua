@@ -262,6 +262,8 @@ function _M:oidc_issuer_configuration(service)
     return nil, 'invalid JSON'
   end
 
+  ngx.log(ngx.DEBUG, 'got oidc config from: ', uri, ' body: ', res.body)
+
   res = http_client.get(config.issuer)
 
   if res.status ~= 200 then
@@ -275,6 +277,8 @@ function _M:oidc_issuer_configuration(service)
     ngx.log(ngx.ERR, 'invalid OIDC Issuer, expected application/json got:  ', res.headers.content_type, ' body: ', res.body)
     return nil, 'invalid JSON'
   end
+
+  ngx.log(ngx.DEBUG, 'got oidc issuer from: ', config.issuer, ' body: ', res.body)
 
   issuer.openid = config
 
