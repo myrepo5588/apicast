@@ -1,0 +1,24 @@
+{
+  "$schema": "http://apicast.io/policy-v1/schema#manifest#",
+  "name": "3scale rate limit",
+  "summary": "",
+  "description": "",
+  "version": "builtin",
+  "configuration": {
+    "type": "object",
+    "properties": {
+      "threescale_portal_endpoint": {
+        "description": "",
+        "type": "string"
+      },
+      "access_token": {
+        "description": "",
+        "type": "string"
+      },
+      "ttl_credentials_seconds": {
+        "description": "",
+        "type": "integer"
+      }
+    }
+  }
+}
