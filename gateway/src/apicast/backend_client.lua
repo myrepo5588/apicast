@@ -134,11 +134,11 @@ end
 --    to the 3scale backend and reduce network traffic.
 local function authorize_options(using_oauth)
   local headers = { ['3scale-options'] = 'rejection_reason_header=1' }
-
+--[[
   if not using_oauth then
     headers['3scale-options'] = headers['3scale-options'] .. '&no_body=1'
   end
-
+--]]
   return { headers = headers }
 end
 
