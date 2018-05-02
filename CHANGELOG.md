@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 - OpenTracing support [PR #669](https://github.com/3scale/apicast/pull/669)
+- 3scale batcher policy [PR #685](https://github.com/3scale/apicast/pull/685)
 
 ### Fixed
 
