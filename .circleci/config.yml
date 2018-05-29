@@ -38,7 +38,34 @@ jobs:
           make builder-image test-builder-image gateway-logs --keep-going
           make prove-docker
           make lint-schema
-  build:
+  busted:
+      docker:
+        - image: quay.io/3scale/s2i-openresty-centos7:1.13.6.1-rover12
+      working_directory: /opt/app-root/apicast
+      steps:
+        - checkout
+        - restore_cache:
+            keys:
+              - apicast-rocks-{{ arch }}-{{ checksum "gateway/Roverfile.lock" }}
+              - apicast-rocks-{{ arch }}-{{ .Branch }}
+              - apicast-rocks-{{ arch }}-master
+        - run: make dependencies
+        - save_cache:
+            key: apicast-rocks-{{ arch }}-{{ checksum "gateway/Roverfile.lock" }}
+            paths:
+              - lua_modules
+        - run: $(make rover) exec make busted
+        - run:
+            name: Report Unit Test Code Coverage
+            command: curl -s https://codecov.io/bash | bash -s - -F busted -c
+            when: always
+        - store_test_results:
+            path: tmp/junit
+        - store_artifacts:
+            path: tmp/junit
+            destination: junit
+
+  prove:
     docker:
       - image: quay.io/3scale/s2i-openresty-centos7:1.13.6.1-rover12
         environment:
@@ -48,23 +75,12 @@ jobs:
     working_directory: /opt/app-root/apicast
     steps:
       - checkout
-      - run: rm -rf lua_modules
       - restore_cache:
           keys:
             - apicast-rocks-{{ arch }}-{{ checksum "gateway/Roverfile.lock" }}
             - apicast-rocks-{{ arch }}-{{ .Branch }}
             - apicast-rocks-{{ arch }}-master
       - run: make dependencies
-      - save_cache:
-          key: apicast-rocks-{{ arch }}-{{ checksum "gateway/Roverfile.lock" }}
-          paths:
-            - lua_modules
-      - run: mkdir -p tmp/junit
-      - run: $(make rover) exec make busted
-      - run:
-          name: Report Unit Test Code Coverage
-          command: curl -s https://codecov.io/bash | bash -s - -F busted -c
-          when: always
       - restore_cache:
           keys:
             - apicast-cpanm-v2-{{ arch }}-{{ checksum "gateway/cpanfile" }}
@@ -73,7 +89,7 @@ jobs:
       - run:
           command: /usr/libexec/s2i/entrypoint make prove
           environment:
-            JUNIT_OUTPUT_FILE: tmp/junit/prove.xml
+            JUNIT_OUTPUT_FILE: tmp/junit/prove/report.xml
             HARNESS: TAP::Harness::JUnit
       - run:
           name: Report Integration Test Code Coverage

@@ -8,7 +8,7 @@ return function(options)
 
   local tap = TAP(setmetatable({ }, { __index = options }))
   local junit = JUnit(setmetatable({
-    arguments = { 'tmp/junit/busted.xml' },
+    arguments = { 'tmp/junit/busted/results.xml' },
   }, { __index = options }))
 
   function handler:subscribe(options)
