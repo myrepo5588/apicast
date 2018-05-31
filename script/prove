@@ -11,7 +11,7 @@ trap generate_coverage EXIT
 # shellcheck disable=SC2086
 rm -f $coverage luacov.report.*.out
 
-if [ -n "$JUNIT_OUTPUT_FILE" ]; then
+if [ -n "${JUNIT_OUTPUT_FILE:-}" ]; then
   mkdir -p $(dirname "$JUNIT_OUTPUT_FILE")
 fi
 
