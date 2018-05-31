@@ -78,7 +78,8 @@ local/bin/carton: $(CPANM)
 cpan: $(CPANM)
 	$(CPANM) --local-lib ./local --notest --installdeps ./gateway
 
-export PERL5LIB=$(PWD)/local/lib/perl5
+PERL5LIB:=$(PWD)/local/lib/perl5:$(PERL5LIB)
+export PERL5LIB
 
 carton: export PERL_CARTON_CPANFILE=$(PWD)/gateway/cpanfile
 carton: export PERL_CARTON_PATH=$(PWD)/local
