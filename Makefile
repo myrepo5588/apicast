@@ -85,7 +85,7 @@ carton: export PERL_CARTON_PATH=$(PWD)/local
 carton: $(CARTON)
 carton:
 	$(CARTON) install --deployment --cached
-	$(CARTON) bundle > /dev/null
+	$(CARTON) bundle 2> /dev/null
 
 find-file = $(shell find $(2) -type f -name $(1))
 
