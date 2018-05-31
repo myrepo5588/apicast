@@ -84,6 +84,8 @@ jobs:
           key: apicast-cpanm-{{ arch }}-{{ checksum "gateway/cpanfile" }}
           paths:
             - ~/perl5
+            - ./local
+            - ./vendor/cache
       - store_test_results:
           path: tmp/junit
       - store_artifacts:
