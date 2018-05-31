@@ -78,11 +78,13 @@ local/bin/carton: $(CPANM)
 cpan: $(CPANM)
 	$(CPANM) --local-lib ./local --notest --installdeps ./gateway
 
-carton: export PERL_CARTON_CPANFILE=./gateway/cpanfile
-carton: export PERL_CARTON_PATH=./local
+export PERL5LIB=$(PWD)/local/lib/perl5
+
+carton: export PERL_CARTON_CPANFILE=$(PWD)/gateway/cpanfile
+carton: export PERL_CARTON_PATH=$(PWD)/local
 carton: $(CARTON)
 carton:
-	$(CARTON) install --cached
+	$(CARTON) install --deployment --cached
 	$(CARTON) bundle > /dev/null
 
 find-file = $(shell find $(2) -type f -name $(1))

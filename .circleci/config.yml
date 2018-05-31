@@ -67,9 +67,9 @@ jobs:
           when: always
       - restore_cache:
           keys:
-            - apicast-cpanm-{{ arch }}-{{ checksum "gateway/cpanfile" }}
-            - apicast-cpanm-{{ arch }}-{{ .Branch }}
-            - apicast-cpanm-{{ arch }}-master
+            - apicast-cpanm-v2-{{ arch }}-{{ checksum "gateway/cpanfile" }}
+            - apicast-cpanm-v2-{{ arch }}-{{ .Branch }}
+            - apicast-cpanm-v2-{{ arch }}-master
       - run:
           command: /usr/libexec/s2i/entrypoint make prove
           environment:
@@ -81,11 +81,12 @@ jobs:
             curl -s https://codecov.io/bash | bash -s - -f 'luacov.report.*.out' -F prove -c
           when: always
       - save_cache:
-          key: apicast-cpanm-{{ arch }}-{{ checksum "gateway/cpanfile" }}
+          key: apicast-cpanm-v2-{{ arch }}-{{ checksum "gateway/cpanfile" }}
           paths:
             - ~/perl5
             - ./local
             - ./vendor/cache
+            - ./.cpanm
       - store_test_results:
           path: tmp/junit
       - store_artifacts:
