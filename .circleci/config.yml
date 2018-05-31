@@ -123,7 +123,6 @@ jobs:
       working_directory: /opt/app-root/apicast
       steps:
         - checkout
-        - <<: *restore-lua-cache
         - attach_workspace:
             at: .
         - run: $(make rover) exec make busted
@@ -144,8 +143,6 @@ jobs:
     working_directory: /opt/app-root/apicast
     steps:
       - checkout
-      - <<: *restore-lua-cache
-      - <<: *restore-perl-cache
       - attach_workspace:
           at: .
       - run:
