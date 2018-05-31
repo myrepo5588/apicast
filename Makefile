@@ -108,7 +108,7 @@ runtime-image: PULL_POLICY ?= always
 runtime-image: IMAGE_NAME = apicast-runtime-test
 runtime-image: ## Build runtime image
 	$(S2I) build . $(BUILDER_IMAGE) $(IMAGE_NAME) \
-		--volume=$(PWD)/local:/opt/app-root/src/local \
+		--volume=$(PWD)/local:/opt/app-root/src/perl5 \
 		--volume=$(PWD)/lua_modules:/opt/app-root/src/lua_modules \
 		--context-dir=$(S2I_CONTEXT) \
 		--runtime-image=$(RUNTIME_IMAGE) \

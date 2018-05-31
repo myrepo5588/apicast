@@ -15,33 +15,4 @@ cat > /tmp/.s2i/image_metadata.json << JSON
 }
 JSON
 
-
-echo "pwd: "
-pwd
-mount
-
-# Restore artifacts from the previous build (if they exist).
-#
-if [ "$(ls /tmp/artifacts/ 2>/dev/null)" ]; then
-  echo "---> Restoring build artifacts..."
-  cp -vr /tmp/artifacts/. .
-  rm -rf /tmp/artifacts/
-fi
-
-echo "---> Installing application source..."
-cp -Rf /tmp/src/. ./
-
-echo "---> Building application from source..."
-
-if [ -e "/tmp/src/Roverfile.lock" ]; then
-  echo "---> Installing dependencies"
-  rover install --roverfile /tmp/src/Roverfile --path . --without development test
-fi
-
-if [ -e "/tmp/src/cpanfile" ]; then
-  echo "---> Installing Perl dependencies"
-  cpanm --local-lib ./local --notest --installdeps /tmp/src
-  rm -rf ~/.cpanm
-fi
-
-ln --verbose --symbolic /etc/ssl/certs/ca-bundle.crt "$(pwd)/conf" 2>/dev/null || true
+exec "${STI_SCRIPTS_PATH:-/usr/libexec/s2i}/$(basename $0)"
