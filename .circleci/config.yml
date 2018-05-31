@@ -40,11 +40,15 @@ docker-compose: &docker-compose
     pip install "docker-compose==${DOCKER_COMPOSE_VERSION}"
     docker-compose version
 
+attach-workspace: &attach-workspace
+  attach_workspace:
+    at: .
+
 # ------------------------------------------------------------------------
 
 version: 2
 jobs:
-  s2i-runtime: &S2i
+  s2i-runtime: &s2i-job
     <<: *base-job
     docker:
       - image: docker:stable
@@ -58,11 +62,12 @@ jobs:
       - <<: *setup-docker
       - checkout
       - run: travis/install-s2i.sh /usr/local/bin # needs to be after checkout because it uses script from the repo
+      - <<: *attach-workspace
       - run: make runtime-image
       - run: make test-runtime-image gateway-logs --keep-going
 
   s2i-builder:
-    <<: *S2i
+    <<: *s2i-job
     steps:
       - run: apk update && apk add wget make bash curl py-pip git openssh-client
       - <<: *docker-compose
@@ -73,7 +78,6 @@ jobs:
           export IMAGE_TAG=${CIRCLE_TAG:-${CIRCLE_PR_NUMBER:-${CIRCLE_BRANCH}}}
           export IMAGE_NAME="quay.io/3scale/apicast:${IMAGE_TAG}-builder"
           make builder-image test-builder-image gateway-logs --keep-going
-          make prove-docker
           make lint-schema
 
   # Download, build and store Lua dependencies.
@@ -123,8 +127,7 @@ jobs:
       working_directory: /opt/app-root/apicast
       steps:
         - checkout
-        - attach_workspace:
-            at: .
+        - <<: *attach-workspace
         - run: $(make rover) exec make busted
         - run:
             name: Report Unit Test Code Coverage
@@ -142,8 +145,7 @@ jobs:
       - <<: *s2i-image
     steps:
       - checkout
-      - attach_workspace:
-          at: .
+      - <<: *attach-workspace
       - run: make doc
       - store_artifacts:
           path: doc/lua
@@ -157,8 +159,7 @@ jobs:
 
     steps:
       - checkout
-      - attach_workspace:
-          at: .
+      - <<: *attach-workspace
       - run:
           command: /usr/libexec/s2i/entrypoint make prove
           environment:
@@ -176,7 +177,7 @@ jobs:
           destination: junit
 
   deploy:
-    <<: *S2i
+    <<: *s2i-job
     steps:
       - run: apk update && apk add wget make bash curl git openssh-client
       - setup_remote_docker:
@@ -241,6 +242,9 @@ workflows:
           <<: *build-tags
       - s2i-runtime:
           <<: *build-tags
+          requires:
+            - build-lua
+            - build-perl
       - deploy:
           context: org-global
           requires:
