@@ -75,10 +75,17 @@ jobs:
       - <<: *setup-docker
       - checkout
       - run: travis/install-s2i.sh /usr/local/bin # needs to be after checkout because it uses script from the repo
+      - <<: *attach-workspace
+      - run:
+          name: "Build image"
+          command: make builder-image
+
+      - run:
+          name: "Build image (incremental)"
+          command: make builder-image
+
       - run: |
-          export IMAGE_TAG=${CIRCLE_TAG:-${CIRCLE_PR_NUMBER:-${CIRCLE_BRANCH}}}
-          export IMAGE_NAME="quay.io/3scale/apicast:${IMAGE_TAG}-builder"
-          make builder-image test-builder-image gateway-logs --keep-going
+          make test-builder-image gateway-logs --keep-going
           make lint-schema
 
   # Download, build and store Lua dependencies.
@@ -241,6 +248,9 @@ workflows:
             - build-lua
       - s2i-builder:
           <<: *build-tags
+          requires:
+            - build-lua
+            - build-perl
       - s2i-runtime:
           <<: *build-tags
           requires:
