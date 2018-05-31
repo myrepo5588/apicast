@@ -60,7 +60,7 @@ apicast-source: ## Create Docker Volume container with APIcast source code
 	docker cp . $(COMPOSE_PROJECT_NAME)-source:/opt/app-root/src
 
 BUSTED_FILES ?=
-busted: dependencies $(ROVER) ## Test Lua.
+busted: $(ROVER) ## Test Lua.
 	@$(ROVER) exec bin/busted $(BUSTED_FILES)
 	@- luacov
 
@@ -92,7 +92,7 @@ find-file = $(shell find $(2) -type f -name $(1))
 prove: HARNESS ?= TAP::Harness
 prove: PROVE_FILES ?= $(filter-out $(call find-file, "*.t", examples/scaffold),$(call find-file, *.t, t examples))
 prove: export TEST_NGINX_RANDOMIZE=1
-prove: $(ROVER) nginx carton ## Test nginx
+prove: $(ROVER) nginx ## Test nginx
 	$(ROVER) exec script/prove -j$(NPROC) --harness=$(HARNESS) $(PROVE_FILES)
 
 prove-docker: apicast-source

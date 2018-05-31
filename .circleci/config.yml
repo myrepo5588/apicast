@@ -1,9 +1,42 @@
+s2i-image: &s2i-image
+  image: quay.io/3scale/s2i-openresty-centos7:1.13.6.1-rover12
+  environment:
+    TEST_NGINX_BINARY: openresty
+    LUA_BIN_PATH: /opt/app-root/bin
+restore-lua-cache: &restore-lua-cache
+  restore_cache:
+    keys:
+      - apicast-rocks-{{ arch }}-{{ checksum "gateway/Roverfile.lock" }}
+      - apicast-rocks-{{ arch }}-{{ .Branch }}
+      - apicast-rocks-{{ arch }}-master
+
+restore-perl-cache: &restore-perl-cache
+  restore_cache:
+    keys:
+      - apicast-cpanm-v2-{{ arch }}-{{ checksum "gateway/cpanfile.snapshot" }}
+      - apicast-cpanm-v2-{{ arch }}-{{ .Branch }}
+      - apicast-cpanm-v2-{{ arch }}-master
+
+base-job: &base-job
+  working_directory: /opt/app-root/apicast
+
+perl-cache-paths: &perl-cache-paths
+  paths:
+    - ./local
+    - ./vendor/cache
+    - ./.cpanm
+
+lua-cache-paths: &lua-cache-paths
+  paths:
+    - ./lua_modules
+# ------------------------------------------------------------------------
+
 version: 2
 jobs:
   s2i-runtime: &S2i
+    <<: *base-job
     docker:
       - image: docker:stable
-    working_directory: /opt/app-root/apicast
     environment:
       S2I_VERSION: "1.1.9a-40ad911d"
       DOCKER_COMPOSE_VERSION: "1.16.1"
@@ -20,6 +53,7 @@ jobs:
       - run: travis/install-s2i.sh /usr/local/bin # needs to be after checkout because it uses script from the repo
       - run: make runtime-image
       - run: make test-runtime-image gateway-logs --keep-going
+
   s2i-builder:
     <<: *S2i
     steps:
@@ -38,22 +72,57 @@ jobs:
           make builder-image test-builder-image gateway-logs --keep-going
           make prove-docker
           make lint-schema
+
+  # Download, build and store Lua dependencies.
+
+  build-lua:
+    <<: *base-job
+    docker:
+      - <<: *s2i-image
+    steps:
+      - checkout
+      - run:
+          # This can happen when doing local build: lua_modules is copied from the host
+          name: Cleanup local dependencies
+          command: rm -rf lua_modules
+      - <<: *restore-lua-cache
+      - run: make dependencies
+      - save_cache:
+          key: apicast-rocks-{{ arch }}-{{ checksum "gateway/Roverfile.lock" }}
+          <<: *lua-cache-paths
+      - persist_to_workspace:
+          root: .
+          <<: *lua-cache-paths
+
+  # Download, build and store Perl dependencies.
+
+  build-perl:
+    <<: *base-job
+    docker:
+      - <<: *s2i-image
+    steps:
+      - checkout
+      - <<: *restore-perl-cache
+      - run: make carton
+      - save_cache:
+          key: apicast-cpanm-v2-{{ arch }}-{{ checksum "gateway/cpanfile" }}
+          <<: *perl-cache-paths
+      - persist_to_workspace:
+          root: .
+          <<: *perl-cache-paths
+
+  # Run unit tests (busted)
+
   busted:
       docker:
-        - image: quay.io/3scale/s2i-openresty-centos7:1.13.6.1-rover12
+        - <<: *s2i-image
+        - image: redis:3.2.8-alpine
       working_directory: /opt/app-root/apicast
       steps:
         - checkout
-        - restore_cache:
-            keys:
-              - apicast-rocks-{{ arch }}-{{ checksum "gateway/Roverfile.lock" }}
-              - apicast-rocks-{{ arch }}-{{ .Branch }}
-              - apicast-rocks-{{ arch }}-master
-        - run: make dependencies
-        - save_cache:
-            key: apicast-rocks-{{ arch }}-{{ checksum "gateway/Roverfile.lock" }}
-            paths:
-              - lua_modules
+        - <<: *restore-lua-cache
+        - attach_workspace:
+            at: .
         - run: $(make rover) exec make busted
         - run:
             name: Report Unit Test Code Coverage
@@ -67,25 +136,15 @@ jobs:
 
   prove:
     docker:
-      - image: quay.io/3scale/s2i-openresty-centos7:1.13.6.1-rover12
-        environment:
-          TEST_NGINX_BINARY: openresty
-          LUA_BIN_PATH: /opt/app-root/bin
+      - <<: *s2i-image
       - image: redis:3.2.8-alpine
     working_directory: /opt/app-root/apicast
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - apicast-rocks-{{ arch }}-{{ checksum "gateway/Roverfile.lock" }}
-            - apicast-rocks-{{ arch }}-{{ .Branch }}
-            - apicast-rocks-{{ arch }}-master
-      - run: make dependencies
-      - restore_cache:
-          keys:
-            - apicast-cpanm-v2-{{ arch }}-{{ checksum "gateway/cpanfile" }}
-            - apicast-cpanm-v2-{{ arch }}-{{ .Branch }}
-            - apicast-cpanm-v2-{{ arch }}-master
+      - <<: *restore-lua-cache
+      - <<: *restore-perl-cache
+      - attach_workspace:
+          at: .
       - run:
           command: /usr/libexec/s2i/entrypoint make prove
           environment:
@@ -96,13 +155,6 @@ jobs:
           command:
             curl -s https://codecov.io/bash | bash -s - -f 'luacov.report.*.out' -F prove -c
           when: always
-      - save_cache:
-          key: apicast-cpanm-v2-{{ arch }}-{{ checksum "gateway/cpanfile" }}
-          paths:
-            - ~/perl5
-            - ./local
-            - ./vendor/cache
-            - ./.cpanm
       - store_test_results:
           path: tmp/junit
       - store_artifacts:
@@ -138,6 +190,11 @@ jobs:
           path: tmp/benchmark
           destination: benchmark
 
+build-tags: &build-tags
+  filters:
+    tags:
+      only: /.*/
+
 workflows:
   version: 2
   nightly:
@@ -153,16 +210,23 @@ workflows:
           context: org-global
   build-test-deploy:
     jobs:
-      - busted: &build-all-tags
-          filters:
-            tags:
-              only: /.*/
+      - build-lua:
+          <<: *build-tags
+      - build-perl:
+          <<: *build-tags
+      - busted:
+          <<: *build-tags
+          requires:
+            - build-lua
       - prove:
-          <<: *build-all-tags
+          <<: *build-tags
+          requires:
+            - build-lua
+            - build-perl
       - s2i-builder:
-          <<: *build-all-tags
+          <<: *build-tags
       - s2i-runtime:
-          <<: *build-all-tags
+          <<: *build-tags
       - deploy:
           context: org-global
           requires:
