@@ -56,6 +56,7 @@ jobs:
       S2I_VERSION: "1.1.9a-40ad911d"
       DOCKER_COMPOSE_VERSION: "1.16.1"
       OPENRESTY_VERSION: "1.13.6.1-rover12"
+      IMAGE_NAME: apicast-runtime-test
     steps:
       - run: apk update && apk add wget make bash curl py-pip git openssh-client
       - <<: *docker-compose
