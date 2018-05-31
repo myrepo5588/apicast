@@ -136,11 +136,25 @@ jobs:
             path: tmp/junit
             destination: junit
 
+  docs:
+    <<: *base-job
+    docker:
+      - <<: *s2i-image
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: make doc
+      - store_artifacts:
+          path: doc/lua
+          destination: doc
+
   prove:
+    <<: *base-job
     docker:
       - <<: *s2i-image
       - image: redis:3.2.8-alpine
-    working_directory: /opt/app-root/apicast
+
     steps:
       - checkout
       - attach_workspace:
@@ -160,10 +174,6 @@ jobs:
       - store_artifacts:
           path: tmp/junit
           destination: junit
-      - run: make doc
-      - store_artifacts:
-          path: doc/lua
-          destination: doc
 
   deploy:
     <<: *S2i
@@ -223,6 +233,10 @@ workflows:
           requires:
             - build-lua
             - build-perl
+      - docs:
+          <<: *build-tags
+          requires:
+            - build-lua
       - s2i-builder:
           <<: *build-tags
       - s2i-runtime:
