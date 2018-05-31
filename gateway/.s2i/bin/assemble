@@ -16,6 +16,8 @@ cat > /tmp/.s2i/image_metadata.json << JSON
 JSON
 
 
+echo "pwd: "
+pwd
 
 # Restore artifacts from the previous build (if they exist).
 #
