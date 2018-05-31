@@ -108,7 +108,7 @@ jobs:
       - <<: *restore-perl-cache
       - run: make carton
       - save_cache:
-          key: apicast-cpanm-v2-{{ arch }}-{{ checksum "gateway/cpanfile" }}
+          key: apicast-cpanm-v2-{{ arch }}-{{ checksum "gateway/cpanfile.snapshot" }}
           <<: *perl-cache-paths
       - persist_to_workspace:
           root: .
