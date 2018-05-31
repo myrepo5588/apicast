@@ -29,6 +29,17 @@ perl-cache-paths: &perl-cache-paths
 lua-cache-paths: &lua-cache-paths
   paths:
     - ./lua_modules
+
+setup-docker: &setup-docker
+  setup_remote_docker:
+    reusable: true
+    exclusive: false
+
+docker-compose: &docker-compose
+  run: |
+    pip install "docker-compose==${DOCKER_COMPOSE_VERSION}"
+    docker-compose version
+
 # ------------------------------------------------------------------------
 
 version: 2
@@ -43,12 +54,8 @@ jobs:
       OPENRESTY_VERSION: "1.13.6.1-rover12"
     steps:
       - run: apk update && apk add wget make bash curl py-pip git openssh-client
-      - run: |
-          pip install "docker-compose==${DOCKER_COMPOSE_VERSION}"
-          docker-compose version
-      - setup_remote_docker:
-          reusable: true
-          exclusive: false
+      - <<: *docker-compose
+      - <<: *setup-docker
       - checkout
       - run: travis/install-s2i.sh /usr/local/bin # needs to be after checkout because it uses script from the repo
       - run: make runtime-image
@@ -58,12 +65,8 @@ jobs:
     <<: *S2i
     steps:
       - run: apk update && apk add wget make bash curl py-pip git openssh-client
-      - run: |
-          pip install "docker-compose==${DOCKER_COMPOSE_VERSION}"
-          docker-compose version
-      - setup_remote_docker:
-          reusable: true
-          exclusive: false
+      - <<: *docker-compose
+      - <<: *setup-docker
       - checkout
       - run: travis/install-s2i.sh /usr/local/bin # needs to be after checkout because it uses script from the repo
       - run: |
