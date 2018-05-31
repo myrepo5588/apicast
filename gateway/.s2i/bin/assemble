@@ -18,6 +18,7 @@ JSON
 
 echo "pwd: "
 pwd
+mount
 
 # Restore artifacts from the previous build (if they exist).
 #
