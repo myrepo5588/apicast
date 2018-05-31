@@ -151,20 +151,23 @@ workflows:
      jobs:
        - deploy:
           context: org-global
-  build:
+  build-test-deploy:
     jobs:
-      - build: &git-tags
+      - busted: &build-all-tags
           filters:
             tags:
               only: /.*/
-      - s2i-runtime:
-          <<: *git-tags
+      - prove:
+          <<: *build-all-tags
       - s2i-builder:
-          <<: *git-tags
+          <<: *build-all-tags
+      - s2i-runtime:
+          <<: *build-all-tags
       - deploy:
           context: org-global
           requires:
-            - build
+            - prove
+            - busted
             - s2i-runtime
             - s2i-builder
           filters:
