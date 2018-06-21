@@ -5,16 +5,16 @@ local ipairs = ipairs
 local sub = ngx.re.sub
 local gsub = ngx.re.gsub
 
-local QueryParams = require 'apicast.policy.url_rewriting.query_params'
-local TemplateString = require 'apicast.template_string'
-local default_value_type = 'plain'
+local QueryParams = require "apicast.policy.url_rewriting.query_params"
+local TemplateString = require "apicast.template_string"
+local default_value_type = "plain"
 
-local policy = require('apicast.policy')
-local _M = policy.new('URL rewriting policy')
+local policy = require("apicast.policy")
+local _M = policy.new("URL rewriting policy")
 
 local new = _M.new
 
-local substitute_functions = { sub = sub, gsub = gsub }
+local substitute_functions = {sub = sub, gsub = gsub}
 
 -- func needs to be ngx.re.sub or ngx.re.gsub.
 -- This method simply calls one of those 2. They have the same interface.
@@ -22,7 +22,7 @@ local function substitute(func, subject, regex, replace, options)
   local new_uri, num_changes, err = func(subject, regex, replace, options)
 
   if not new_uri then
-    ngx.log(ngx.WARN, 'There was an error applying the regex: ', err)
+    ngx.log(ngx.WARN, "There was an error applying the regex: ", err)
   end
 
   return new_uri, num_changes > 0
@@ -36,8 +36,7 @@ local function apply_rewrite_command(command)
     ngx.log(ngx.WARN, "Unknown URL rewrite operation: ", command.op)
   end
 
-  local new_uri, changed = substitute(
-    func, ngx.var.uri, command.regex, command.replace, command.options)
+  local new_uri, changed = substitute(func, ngx.var.uri, command.regex, command.replace, command.options)
 
   if changed then
     ngx.req.set_uri(new_uri)
@@ -51,7 +50,7 @@ local function apply_query_arg_command(command, query_args, context)
   local func = query_args[command.op]
 
   if not func then
-    ngx.log(ngx.ERR, 'Invalid query args operation: ', command.op)
+    ngx.log(ngx.ERR, "Invalid query args operation: ", command.op)
     return
   end
 
@@ -61,10 +60,8 @@ end
 
 local function build_template(query_arg_command)
   if query_arg_command.value then -- The 'delete' op does not have a value
-    query_arg_command.template_string = TemplateString.new(
-      query_arg_command.value,
-      query_arg_command.value_type or default_value_type
-    )
+    query_arg_command.template_string =
+      TemplateString.new(query_arg_command.value, query_arg_command.value_type or default_value_type)
   end
 end
 
@@ -105,7 +102,7 @@ function _M:rewrite(context)
   for _, command in ipairs(self.commands) do
     local rewritten = apply_rewrite_command(command)
 
-    if rewritten and command['break'] then
+    if rewritten and command["break"] then
       break
     end
   end

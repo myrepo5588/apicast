@@ -2,12 +2,12 @@ local max = math.max
 local min = math.min
 local random = math.random
 
-local balancer = require 'resty.balancer'
-local balancer_random = require 'resty.balancer.random'
-local lrucache = require 'resty.lrucache'
+local balancer = require "resty.balancer"
+local balancer_random = require "resty.balancer.random"
+local lrucache = require "resty.lrucache"
 
 local _M = {
-  _VERSION = '0.1',
+  _VERSION = "0.1",
   cache_size = 1000
 }
 
@@ -25,7 +25,7 @@ _M.reset()
 
 function _M.call(peers)
   if #peers == 0 then
-    return nil, 'empty peers'
+    return nil, "empty peers"
   end
 
   local hash = peers.hash

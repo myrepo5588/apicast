@@ -1,18 +1,18 @@
-local policy = require('apicast.policy')
-local _M = policy.new('Rate Limit Policy')
+local policy = require("apicast.policy")
+local _M = policy.new("Rate Limit Policy")
 
-local resty_limit_conn = require('resty.limit.conn')
-local resty_limit_req = require('resty.limit.req')
-local resty_limit_count = require('resty.limit.count-inc')
+local resty_limit_conn = require("resty.limit.conn")
+local resty_limit_req = require("resty.limit.req")
+local resty_limit_count = require("resty.limit.count-inc")
 
 local ngx_semaphore = require "ngx.semaphore"
 local limit_traffic = require "resty.limit.traffic"
-local ngx_variable = require ('apicast.policy.ngx_variable')
-local redis_shdict = require('redis_shdict')
+local ngx_variable = require("apicast.policy.ngx_variable")
+local redis_shdict = require("redis_shdict")
 
 local tonumber = tonumber
 local next = next
-local shdict_key = 'limiter'
+local shdict_key = "limiter"
 
 local insert = table.insert
 local ipairs = ipairs
@@ -20,8 +20,8 @@ local unpack = table.unpack
 local format = string.format
 local concat = table.concat
 
-local TemplateString = require 'apicast.template_string'
-local default_name_type = 'plain'
+local TemplateString = require "apicast.template_string"
+local default_name_type = "plain"
 
 local new = _M.new
 
@@ -97,8 +97,7 @@ local function build_limiters_and_keys(type, limiters, redis, error_settings, co
 
     insert(res_limiters, lim)
 
-    local key = limiter.template_string:render(
-      ngx_variable.available_context(context))
+    local key = limiter.template_string:render(ngx_variable.available_context(context))
     if limiter.key.scope == "global" then
       key = format("%s_%s", type, key)
     else
@@ -118,8 +117,7 @@ end
 
 local function build_templates(limiters)
   for _, limiter in ipairs(limiters) do
-    limiter.template_string = TemplateString.new(
-      limiter.key.name, limiter.key.name_type or default_name_type)
+    limiter.template_string = TemplateString.new(limiter.key.name, limiter.key.name_type or default_name_type)
   end
 end
 
@@ -130,10 +128,9 @@ function _M.new(config)
   self.leaky_bucket_limiters = config.leaky_bucket_limiters or {}
   self.fixed_window_limiters = config.fixed_window_limiters or {}
   self.redis_url = config.redis_url
-  self.error_settings = init_error_settings(
-    config.limits_exceeded_error, config.configuration_error)
+  self.error_settings = init_error_settings(config.limits_exceeded_error, config.configuration_error)
 
-  for _, limiters in ipairs({ self.connection_limiters, self.leaky_bucket_limiters, self.fixed_window_limiters }) do
+  for _, limiters in ipairs({self.connection_limiters, self.leaky_bucket_limiters, self.fixed_window_limiters}) do
     build_templates(limiters)
   end
 
@@ -144,7 +141,7 @@ function _M:access(context)
   local red
   if self.redis_url then
     local rederr
-    red, rederr = redis_shdict.new{ url = self.redis_url }
+    red, rederr = redis_shdict.new {url = self.redis_url}
     if not red then
       ngx.log(ngx.ERR, "failed to connect Redis: ", rederr)
       error(self.error_settings, "configuration_issue")
@@ -152,17 +149,17 @@ function _M:access(context)
     end
   end
 
-  local conn_limiters, conn_keys = build_limiters_and_keys(
-    'connections', self.connection_limiters, red, self.error_settings, context)
+  local conn_limiters, conn_keys =
+    build_limiters_and_keys("connections", self.connection_limiters, red, self.error_settings, context)
 
-  local leaky_bucket_limiters, leaky_bucket_keys = build_limiters_and_keys(
-    'leaky_bucket', self.leaky_bucket_limiters, red, self.error_settings, context)
+  local leaky_bucket_limiters, leaky_bucket_keys =
+    build_limiters_and_keys("leaky_bucket", self.leaky_bucket_limiters, red, self.error_settings, context)
 
-  local fixed_window_limiters, fixed_window_keys = build_limiters_and_keys(
-    'fixed_window', self.fixed_window_limiters, red, self.error_settings, context)
+  local fixed_window_limiters, fixed_window_keys =
+    build_limiters_and_keys("fixed_window", self.fixed_window_limiters, red, self.error_settings, context)
 
   local limiters = {}
-  local limiter_groups = { conn_limiters, leaky_bucket_limiters, fixed_window_limiters }
+  local limiter_groups = {conn_limiters, leaky_bucket_limiters, fixed_window_limiters}
   for _, limiter_group in ipairs(limiter_groups) do
     if #limiter_group > 0 then
       insert(limiters, unpack(limiter_group))
@@ -170,7 +167,7 @@ function _M:access(context)
   end
 
   local keys = {}
-  local keys_groups = { conn_keys, leaky_bucket_keys, fixed_window_keys }
+  local keys_groups = {conn_keys, leaky_bucket_keys, fixed_window_keys}
   for _, keys_group in ipairs(keys_groups) do
     if #keys_group > 0 then
       insert(keys, unpack(keys_group))
@@ -186,11 +183,11 @@ function _M:access(context)
     if comerr == "rejected" then
       ngx.log(ngx.WARN, "Requests over the limit.")
       error(self.error_settings, "limits_exceeded")
-      return nil, 'limits exceeded'
+      return nil, "limits exceeded"
     else
       ngx.log(ngx.ERR, "failed to limit traffic: ", comerr)
       error(self.error_settings, "configuration_issue")
-      return nil, comerr or 'invalid configuration'
+      return nil, comerr or "invalid configuration"
     end
   end
 
@@ -208,7 +205,7 @@ function _M:access(context)
   end
 
   if delay > 0 then
-    ngx.log(ngx.WARN, 'need to delay by: ', delay, 's, states: ', concat(states, ", "))
+    ngx.log(ngx.WARN, "need to delay by: ", delay, "s, states: ", concat(states, ", "))
     ngx.sleep(delay)
   end
 
@@ -223,7 +220,7 @@ local function checkin(_, ctx, time, semaphore, redis_url, error_settings)
   local red
   if redis_url then
     local rederr
-    red, rederr = redis_shdict.new{ url = redis_url }
+    red, rederr = redis_shdict.new {url = redis_url}
     if not red then
       ngx.log(ngx.ERR, "failed to connect Redis: ", rederr)
       error(error_settings, "configuration_issue")
@@ -245,7 +242,6 @@ local function checkin(_, ctx, time, semaphore, redis_url, error_settings)
   if semaphore then
     semaphore:post(1)
   end
-
 end
 
 function _M:log()

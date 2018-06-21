@@ -4,8 +4,8 @@
 -- login, the provider is supposed to send the client (via redirect)
 -- to this endpoint, with the same status code that we sent him at the
 -- moment of the first redirect
-local random = require 'resty.random'
-local ts = require 'apicast.threescale_utils'
+local random = require "resty.random"
+local ts = require "apicast.threescale_utils"
 
 -- The authorization server should send some data in the callback response to let the
 -- API Gateway know which user to associate with the token.
@@ -31,16 +31,19 @@ end
 
 -- Check valid state parameter sent
 local function check_state(params)
-  local required_params = {'state'}
+  local required_params = {"state"}
 
   if ts.required_params_present(required_params, params) then
     local red = ts.connect_redis()
-    local tmp_data = ngx.ctx.service.id .. "#tmp_data:".. params.state
+    local tmp_data = ngx.ctx.service.id .. "#tmp_data:" .. params.state
     local ok, err = red:exists(tmp_data)
 
     if not ok or ok == 0 or err then
       ngx.header.content_type = "application/x-www-form-urlencoded"
-      ngx.redirect(params.redirect_uri .. "#error=invalid_request&error_description=invalid_or_expired_state&state="..params.state)
+      ngx.redirect(
+        params.redirect_uri ..
+          "#error=invalid_request&error_description=invalid_or_expired_state&state=" .. params.state
+      )
     end
 
     return true
@@ -52,20 +55,22 @@ end
 
 -- Retrieve client data from Redis
 local function retrieve_client_data(service_id, params)
-
-  local tmp_data = service_id .. "#tmp_data:".. params.state
+  local tmp_data = service_id .. "#tmp_data:" .. params.state
 
   local red = ts.connect_redis()
   local ok, err = red:hgetall(tmp_data)
 
   if not ok then
-    ngx.log(0, "no values for tmp_data hash: ".. ts.dump(err))
+    ngx.log(0, "no values for tmp_data hash: " .. ts.dump(err))
     ngx.header.content_type = "application/x-www-form-urlencoded"
-    return ngx.redirect(params.redirect_uri .. "#error=invalid_request&error_description=invalid_or_expired_state&state=" .. (params.state or ""))
+    return ngx.redirect(
+      params.redirect_uri ..
+        "#error=invalid_request&error_description=invalid_or_expired_state&state=" .. (params.state or "")
+    )
   end
 
   -- Restore client data
-  local client_data = red:array_to_hash(ok)  -- restoring client data
+  local client_data = red:array_to_hash(ok) -- restoring client data
   -- Delete the tmp_data:
   red:del(tmp_data)
 
@@ -80,17 +85,21 @@ end
 local function persist_code(client_data, params, code)
   local red = ts.connect_redis()
 
-  local ok, err = red:hmset("c:".. code, {
-    client_id = client_data.client_id,
-    client_secret = client_data.secret_id,
-    redirect_uri = client_data.redirect_uri,
-    access_token = client_data.access_token,
-    user_id = params.user_id,
-    code = code
-  })
+  local ok, err =
+    red:hmset(
+    "c:" .. code,
+    {
+      client_id = client_data.client_id,
+      client_secret = client_data.secret_id,
+      redirect_uri = client_data.redirect_uri,
+      access_token = client_data.access_token,
+      user_id = params.user_id,
+      code = code
+    }
+  )
 
   if ok then
-    return red:expire("c:".. code, 60 * 10) -- code expires in 10 mins
+    return red:expire("c:" .. code, 60 * 10) -- code expires in 10 mins
   else
     return ok, err
   end
@@ -101,7 +110,9 @@ local function store_code(client_data, params, code)
 
   if not ok then
     ngx.header.content_type = "application/x-www-form-urlencoded"
-    return ngx.redirect(params.redirect_uri .. "?error=server_error&error_description=code_storage_failed&state=" .. (params.state or "")), err
+    return ngx.redirect(
+      params.redirect_uri .. "?error=server_error&error_description=code_storage_failed&state=" .. (params.state or "")
+    ), err
   end
 
   return ok, err
@@ -110,7 +121,7 @@ end
 -- Returns the code to the client
 local function send_code(client_data, code)
   ngx.header.content_type = "application/x-www-form-urlencoded"
-  return ngx.redirect( client_data.redirect_uri .. "?code="..code.."&state=" .. (client_data.state or ""))
+  return ngx.redirect(client_data.redirect_uri .. "?code=" .. code .. "&state=" .. (client_data.state or ""))
 end
 
 -- Get Authorization Code
@@ -126,7 +137,7 @@ local function get_code(service_id, params)
 end
 
 local _M = {
-  VERSION = '0.0.1'
+  VERSION = "0.0.1"
 }
 
 _M.call = function()

@@ -9,20 +9,20 @@ local ipairs = ipairs
 local type = type
 local insert = table.insert
 
-local TemplateString = require 'apicast.template_string'
+local TemplateString = require "apicast.template_string"
 
-local default_value_type = 'plain'
+local default_value_type = "plain"
 
-local policy = require('apicast.policy')
-local _M = policy.new('Headers policy')
+local policy = require("apicast.policy")
+local _M = policy.new("Headers policy")
 
 local new = _M.new
 
 local function new_header_value(current_value, value_to_add)
   local new_value = current_value or {}
 
-  if type(new_value) == 'string' then
-    new_value = { new_value }
+  if type(new_value) == "string" then
+    new_value = {new_value}
   end
 
   insert(new_value, value_to_add)
@@ -93,8 +93,7 @@ end
 
 local function build_templates(commands)
   for _, command in ipairs(commands) do
-    command.template_string = TemplateString.new(
-      command.value, command.value_type or default_value_type)
+    command.template_string = TemplateString.new(command.value, command.value_type or default_value_type)
   end
 end
 
@@ -123,7 +122,7 @@ function _M.new(config)
   local self = new(config)
   self.config = init_config(config)
 
-  for _, commands in ipairs({ self.config.request, self.config.response } ) do
+  for _, commands in ipairs({self.config.request, self.config.response}) do
     build_templates(commands)
   end
 
@@ -134,11 +133,11 @@ function _M:rewrite(context)
   -- This is here to avoid calling ngx.req.get_headers() in every command
   -- applied to the request headers.
   local req_headers = ngx.req.get_headers() or {}
-  run_commands(context, self.config.request, 'request', req_headers)
+  run_commands(context, self.config.request, "request", req_headers)
 end
 
 function _M:header_filter(context)
-  run_commands(context, self.config.response, 'response')
+  run_commands(context, self.config.response, "response")
 end
 
 return _M

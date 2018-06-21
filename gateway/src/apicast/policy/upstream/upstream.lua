@@ -1,36 +1,35 @@
 --- Upstream policy
 -- This policy allows to modify the host of a request based on its path.
 
-local resty_resolver = require('resty.resolver')
-local resty_url = require('resty.url')
+local resty_resolver = require("resty.resolver")
+local resty_url = require("resty.url")
 local format = string.format
 local ipairs = ipairs
 local match = ngx.re.match
 local table = table
 
-local balancer = require('apicast.balancer')
+local balancer = require("apicast.balancer")
 
-local _M = require('apicast.policy').new('Upstream policy')
+local _M = require("apicast.policy").new("Upstream policy")
 
 local new = _M.new
 
 local function proxy_pass(url)
-  local res = format('%s://upstream%s', url.scheme, url.path or '')
+  local res = format("%s://upstream%s", url.scheme, url.path or "")
 
   local args = ngx.var.args
   if url.path and args then
-    res = format('%s?%s', res, args)
+    res = format("%s?%s", res, args)
   end
 
   return res
 end
 
 local function change_upstream(url)
-  ngx.ctx.upstream = resty_resolver:instance():get_servers(
-    url.host, { port = url.port })
+  ngx.ctx.upstream = resty_resolver:instance():get_servers(url.host, {port = url.port})
 
   ngx.var.proxy_pass = proxy_pass(url)
-  ngx.req.set_header('Host', url.host)
+  ngx.req.set_header("Host", url.host)
 
   -- We need to check that the headers have not already been sent. They could
   -- have been sent in a different policy, for example.
@@ -41,13 +40,15 @@ end
 
 -- Parses the urls in the config so we do not have to do it on each request.
 local function init_config(config)
-  if not config or not config.rules then return {} end
+  if not config or not config.rules then
+    return {}
+  end
 
   local res = {}
 
   for _, rule in ipairs(config.rules) do
     local parsed_url = resty_url.parse(rule.url)
-    table.insert(res, { regex = rule.regex, url = parsed_url })
+    table.insert(res, {regex = rule.regex, url = parsed_url})
   end
 
   return res
@@ -70,11 +71,11 @@ function _M:rewrite(context)
 
   for _, rule in ipairs(self.rules) do
     if match(req_uri, rule.regex) then
-      ngx.log(ngx.DEBUG, 'upstream policy uri: ', req_uri, ' regex: ', rule.regex, ' match: true')
+      ngx.log(ngx.DEBUG, "upstream policy uri: ", req_uri, " regex: ", rule.regex, " match: true")
       context.new_upstream = rule.url
       break
     else
-      ngx.log(ngx.DEBUG, 'upstream policy uri: ', req_uri, ' regex: ', rule.regex, ' match: false')
+      ngx.log(ngx.DEBUG, "upstream policy uri: ", req_uri, " regex: ", rule.regex, " match: false")
     end
   end
 end

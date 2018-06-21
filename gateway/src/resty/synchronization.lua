@@ -8,7 +8,7 @@ local rawset = rawset
 local setmetatable = setmetatable
 
 local _M = {
-  _VERSION = '0.1'
+  _VERSION = "0.1"
 }
 local mt = {
   __index = _M
@@ -25,9 +25,8 @@ function _M.new(_, size)
     end
   }
 
-
   local semaphores = setmetatable({}, semaphore_mt)
-  return setmetatable({ semaphores = semaphores }, mt)
+  return setmetatable({semaphores = semaphores}, mt)
 end
 
 --- get semaphore for given key
@@ -37,7 +36,7 @@ end
 function _M:acquire(key)
   local semaphores = self.semaphores
   if not semaphores then
-    return nil, 'not initialized'
+    return nil, "not initialized"
   end
   return semaphores[key], key
 end
@@ -48,7 +47,7 @@ end
 function _M:release(key)
   local semaphores = self.semaphores
   if not semaphores then
-    return nil, 'not initialized'
+    return nil, "not initialized"
   end
   semaphores[key] = nil
 end

@@ -17,18 +17,17 @@
 --     It makes sense only in very specific use cases.
 --   - None: disables caching.
 
-local policy = require('apicast.policy')
-local _M = policy.new('Caching policy')
+local policy = require("apicast.policy")
+local _M = policy.new("Caching policy")
 
 local new = _M.new
 
 local function strict_handler(cache, cached_key, response, ttl)
   if response.status == 200 then
-    ngx.log(ngx.INFO, 'apicast cache write key: ', cached_key, ', ttl: ', ttl)
+    ngx.log(ngx.INFO, "apicast cache write key: ", cached_key, ", ttl: ", ttl)
     cache:set(cached_key, 200, ttl or 0)
   else
-    ngx.log(ngx.NOTICE, 'apicast cache delete key: ', cached_key,
-                        ' cause status ', response.status)
+    ngx.log(ngx.NOTICE, "apicast cache delete key: ", cached_key, " cause status ", response.status)
     cache:delete(cached_key)
   end
 end
@@ -37,8 +36,7 @@ local function resilient_handler(cache, cached_key, response, ttl)
   local status = response.status
 
   if status and status < 500 then
-    ngx.log(ngx.INFO, 'apicast cache write key: ', cached_key,
-                      ' status: ', status, ', ttl: ', ttl)
+    ngx.log(ngx.INFO, "apicast cache write key: ", cached_key, " status: ", status, ", ttl: ", ttl)
 
     cache:set(cached_key, status, ttl or 0)
   end
@@ -58,8 +56,7 @@ local function allow_handler(cache, cached_key, response, ttl)
   local status = response.status
 
   if status and status < 500 then
-    ngx.log(ngx.INFO, 'apicast cache write key: ', cached_key,
-                      ' status: ', status, ', ttl: ', ttl)
+    ngx.log(ngx.INFO, "apicast cache write key: ", cached_key, " status: ", status, ", ttl: ", ttl)
 
     cache:set(cached_key, status, ttl or 0)
   else
@@ -68,7 +65,7 @@ local function allow_handler(cache, cached_key, response, ttl)
 end
 
 local function disabled_cache_handler()
-  ngx.log(ngx.DEBUG, 'Caching is disabled. Skipping cache handler.')
+  ngx.log(ngx.DEBUG, "Caching is disabled. Skipping cache handler.")
 end
 
 local handlers = {
@@ -80,14 +77,14 @@ local handlers = {
 
 local function handler(config)
   if not config.caching_type then
-    ngx.log(ngx.ERR, 'Caching type not specified. Disabling cache.')
+    ngx.log(ngx.ERR, "Caching type not specified. Disabling cache.")
     return handlers.none
   end
 
   local res = handlers[config.caching_type]
 
   if not res then
-    ngx.log(ngx.ERR, 'Invalid caching type. Disabling cache.')
+    ngx.log(ngx.ERR, "Invalid caching type. Disabling cache.")
     res = handlers.none
   end
 
@@ -104,7 +101,7 @@ function _M.new(config)
 end
 
 function _M:export()
-  return { cache_handler = self.cache_handler }
+  return {cache_handler = self.cache_handler}
 end
 
 return _M

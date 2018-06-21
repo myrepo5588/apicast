@@ -1,1 +1,1 @@
-return require('upstream')
+return require("upstream")

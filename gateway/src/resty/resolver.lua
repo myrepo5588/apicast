@@ -11,31 +11,31 @@ local insert = table.insert
 local concat = table.concat
 local io_type = io.type
 
-require('resty.core.regex') -- to allow use of ngx.re.match in the init phase
+require("resty.core.regex") -- to allow use of ngx.re.match in the init phase
 
 local re_match = ngx.re.match
-local resolver_cache = require 'resty.resolver.cache'
-local dns_client = require 'resty.resolver.dns_client'
-local resty_env = require 'resty.env'
-local upstream = require 'ngx.upstream'
-local re = require('ngx.re')
+local resolver_cache = require "resty.resolver.cache"
+local dns_client = require "resty.resolver.dns_client"
+local resty_env = require "resty.env"
+local upstream = require "ngx.upstream"
+local re = require("ngx.re")
 local semaphore = require "ngx.semaphore"
-local synchronization = require('resty.synchronization').new(1)
+local synchronization = require("resty.synchronization").new(1)
 
 local init = semaphore.new(1)
 
 local default_resolver_port = 53
 
 local _M = {
-  _VERSION = '0.1',
+  _VERSION = "0.1",
   _nameservers = {},
-  search = { '' }
+  search = {""}
 }
 
-local mt = { __index = _M }
+local mt = {__index = _M}
 
 local function read_resolv_conf(path)
-  path = path or '/etc/resolv.conf'
+  path = path or "/etc/resolv.conf"
 
   local handle, err
 
@@ -57,17 +57,17 @@ local function read_resolv_conf(path)
 end
 
 local function ipv4(address)
-  return re_match(address, '^([0-9]{1,3}\\.){3}[0-9]{1,3}$', 'oj')
+  return re_match(address, "^([0-9]{1,3}\\.){3}[0-9]{1,3}$", "oj")
 end
 
 local function ipv6(address)
-  return re_match(address, '^\\[[a-f\\d:]+\\]$', 'oj')
+  return re_match(address, "^\\[[a-f\\d:]+\\]$", "oj")
 end
 
 local nameserver = {
   mt = {
     __tostring = function(t)
-      return concat(t, ':')
+      return concat(t, ":")
     end
   }
 }
@@ -75,15 +75,20 @@ local nameserver = {
 function nameserver.new(host, port)
   if not ipv4(host) and not ipv6(host) then
     -- then it is likely ipv6 without [ ] around
-    host = format('[%s]', host)
+    host = format("[%s]", host)
   end
-  return setmetatable({ host, port or default_resolver_port }, nameserver.mt)
+  return setmetatable({host, port or default_resolver_port}, nameserver.mt)
 end
 
 function _M.parse_resolver(resolver)
-  if not resolver then return end
+  if not resolver then
+    return
+  end
 
-  local m, err = re_match(resolver, [[^
+  local m, err =
+    re_match(
+    resolver,
+    [[^
       (
         (?:\d{1,3}\.){3}\d{1,3} # ipv4
         |
@@ -92,54 +97,56 @@ function _M.parse_resolver(resolver)
         [a-f\d:]+ # ipv6 without brackets
       )
       (?:\:(\d+))? # optional port
-    $]], 'ojx')
+    $]],
+    "ojx"
+  )
 
   if m then
     return nameserver.new(m[1], m[2])
   else
-    return resolver, err or 'invalid address'
+    return resolver, err or "invalid address"
   end
 end
-
 
 function _M.parse_nameservers(path)
   local resolv_conf, err = read_resolv_conf(path)
 
   if err then
-    ngx.log(ngx.WARN, 'resolver could not get nameservers: ', err)
+    ngx.log(ngx.WARN, "resolver could not get nameservers: ", err)
   end
 
-  ngx.log(ngx.DEBUG, '/etc/resolv.conf:\n', resolv_conf)
+  ngx.log(ngx.DEBUG, "/etc/resolv.conf:\n", resolv_conf)
 
-  local search = { }
-  local nameservers = { search = search }
+  local search = {}
+  local nameservers = {search = search}
 
   local resolver
-  resolver, err = _M.parse_resolver(resty_env.value('RESOLVER'))
+  resolver, err = _M.parse_resolver(resty_env.value("RESOLVER"))
 
   if err then
-    ngx.log(ngx.ERR, 'invalid resolver ', resolver, ' error: ', err)
+    ngx.log(ngx.ERR, "invalid resolver ", resolver, " error: ", err)
   elseif resolver then
     -- we are going to use all resolvers, because we can't trust dnsmasq
     -- see https://github.com/3scale/apicast/issues/321 for more details
     insert(nameservers, resolver)
   end
 
-  for _,line in ipairs(re.split(resolv_conf, "\n+")) do
-
-    local domains = match(line, '^search%s+([^\n]+)')
+  for _, line in ipairs(re.split(resolv_conf, "\n+")) do
+    local domains = match(line, "^search%s+([^\n]+)")
 
     if domains then
-      ngx.log(ngx.DEBUG, 'search ', domains)
+      ngx.log(ngx.DEBUG, "search ", domains)
 
-      for domain in gmatch(domains or '', '([^%s]+)') do
-        if match(domain, '^%#') then break end
-        ngx.log(ngx.DEBUG, 'search domain: ', domain)
+      for domain in gmatch(domains or "", "([^%s]+)") do
+        if match(domain, "^%#") then
+          break
+        end
+        ngx.log(ngx.DEBUG, "search domain: ", domain)
         insert(search, domain)
       end
     end
 
-    local server = match(line, '^nameserver%s+([^%s]+)')
+    local server = match(line, "^nameserver%s+([^%s]+)")
     -- TODO: implement port matching based on https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=549190
     --       meanwhile assuming default port 53.
     if server and format("%s:%s", server, default_resolver_port) ~= tostring(resolver) then
@@ -154,13 +161,13 @@ function _M.init_nameservers(path)
   local nameservers = _M.parse_nameservers(path) or {}
   local search = nameservers.search or {}
 
-  for i=1, #nameservers do
-    ngx.log(ngx.INFO, 'adding ', nameservers[i], ' as default nameserver')
+  for i = 1, #nameservers do
+    ngx.log(ngx.INFO, "adding ", nameservers[i], " as default nameserver")
     insert(_M._nameservers, nameservers[i])
   end
 
-  for i=1, #search do
-    ngx.log(ngx.INFO, 'adding ', search[i], ' as search domain')
+  for i = 1, #search do
+    ngx.log(ngx.INFO, "adding ", search[i], " as search domain")
     insert(_M.search, search[i])
   end
 
@@ -190,14 +197,17 @@ function _M.new(dns, opts)
   local cache = opts.cache or resolver_cache.shared()
   local search = opts.search or _M.search
 
-  ngx.log(ngx.DEBUG, 'resolver search domains: ', concat(search, ' '))
+  ngx.log(ngx.DEBUG, "resolver search domains: ", concat(search, " "))
 
-  return setmetatable({
-    dns = dns,
-    options = { qtype = dns.TYPE_A },
-    cache = cache,
-    search = search
-  }, mt)
+  return setmetatable(
+    {
+      dns = dns,
+      options = {qtype = dns.TYPE_A},
+      cache = cache,
+      search = search
+    },
+    mt
+  )
 end
 
 function _M:instance()
@@ -215,20 +225,27 @@ end
 
 local server_mt = {
   __tostring = function(t)
-    return format('%s:%s', t.address, t.port)
+    return format("%s:%s", t.address, t.port)
   end
 }
 
 local function new_server(answer, port)
-  if not answer then return nil, 'missing answer' end
+  if not answer then
+    return nil, "missing answer"
+  end
   local address = answer.address
-  if not address then return nil, 'server missing address' end
+  if not address then
+    return nil, "server missing address"
+  end
 
-  return setmetatable({
-    address = answer.address,
-    ttl = answer.ttl,
-    port = port or answer.port,
-  }, server_mt)
+  return setmetatable(
+    {
+      address = answer.address,
+      ttl = answer.ttl,
+      port = port or answer.port
+    },
+    server_mt
+  )
 end
 
 local function new_answer(address, port)
@@ -240,7 +257,7 @@ local function new_answer(address, port)
 end
 
 local function is_ip(address)
-  local m, err = re_match(address, '^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$', 'oj')
+  local m, err = re_match(address, "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", "oj")
 
   if m then
     return next(m)
@@ -250,20 +267,20 @@ local function is_ip(address)
 end
 
 local function is_fqdn(name)
-  return find(name, '.', 1, true)
+  return find(name, ".", 1, true)
 end
 
 local servers_mt = {
   __tostring = function(t)
-    return format(rep('%s', #t, ' '), unpack(t))
+    return format(rep("%s", #t, " "), unpack(t))
   end
 }
 
 local function convert_answers(answers, port)
   local servers = {}
 
-  for i=1, #answers do
-    servers[#servers+1] = new_server(answers[i], port)
+  for i = 1, #answers do
+    servers[#servers + 1] = new_server(answers[i], port)
   end
 
   servers.answers = answers
@@ -285,12 +302,14 @@ local function search_dns(self, qname, stale)
 
   local answers, err
 
-  for i=1, #search do
-    local query = qname .. '.' .. search[i]
-    ngx.log(ngx.DEBUG, 'resolver query: ', qname, ' search: ', search[i], ' query: ', query)
+  for i = 1, #search do
+    local query = qname .. "." .. search[i]
+    ngx.log(ngx.DEBUG, "resolver query: ", qname, " search: ", search[i], " query: ", query)
 
     answers, err = cache:get(query, stale)
-    if valid_answers(answers) then break end
+    if valid_answers(answers) then
+      break
+    end
 
     answers, err = dns:query(query, options)
     if valid_answers(answers) then
@@ -309,8 +328,8 @@ local function resolve_upstream(qname)
     return nil, err
   end
 
-  for i=1, #peers do
-    local m = re.split(peers[i].name, ':', 'oj')
+  for i = 1, #peers do
+    local m = re.split(peers[i].name, ":", "oj")
 
     peers[i] = new_answer(m[1], m[2])
   end
@@ -321,13 +340,13 @@ end
 function _M.lookup(self, qname, stale)
   local cache = self.cache
 
-  ngx.log(ngx.DEBUG, 'resolver query: ', qname)
+  ngx.log(ngx.DEBUG, "resolver query: ", qname)
 
   local answers, err
 
   if is_ip(qname) then
-    ngx.log(ngx.DEBUG, 'host is ip address: ', qname)
-    answers = { new_answer(qname) }
+    ngx.log(ngx.DEBUG, "host is ip address: ", qname)
+    answers = {new_answer(qname)}
   else
     if is_fqdn(qname) then
       answers, err = cache:get(qname, stale)
@@ -338,10 +357,9 @@ function _M.lookup(self, qname, stale)
     if not valid_answers(answers) then
       answers, err = search_dns(self, qname, stale)
     end
-
   end
 
-  ngx.log(ngx.DEBUG, 'resolver query: ', qname, ' finished with ', #(answers or empty), ' answers')
+  ngx.log(ngx.DEBUG, "resolver query: ", qname, " finished with ", #(answers or empty), " answers")
 
   return answers, err
 end
@@ -351,16 +369,16 @@ function _M.get_servers(self, qname, opts)
   local dns = self.dns
 
   if not dns then
-    return nil, 'resolver not initialized'
+    return nil, "resolver not initialized"
   end
 
   if not qname then
-    return nil, 'query missing'
+    return nil, "query missing"
   end
 
   -- TODO: pass proper options to dns resolver (like SRV query type)
 
-  local sema, key = synchronization:acquire(format('qname:%s:qtype:%s', qname, 'A'))
+  local sema, key = synchronization:acquire(format("qname:%s:qtype:%s", qname, "A"))
   local ok = sema:wait(0)
 
   local answers, err = self:lookup(qname, not ok)
@@ -372,16 +390,16 @@ function _M.get_servers(self, qname, opts)
   end
 
   if err then
-    ngx.log(ngx.DEBUG, 'query for ', qname, ' finished with error: ', err)
+    ngx.log(ngx.DEBUG, "query for ", qname, " finished with error: ", err)
     return {}, err
   end
 
   if not answers then
-    ngx.log(ngx.DEBUG, 'query for ', qname, ' finished with no answers')
-    return {}, 'no answers'
+    ngx.log(ngx.DEBUG, "query for ", qname, " finished with no answers")
+    return {}, "no answers"
   end
 
-  ngx.log(ngx.DEBUG, 'query for ', qname, ' finished with ' , #answers, ' answers')
+  ngx.log(ngx.DEBUG, "query for ", qname, " finished with ", #answers, " answers")
 
   local servers = convert_answers(answers, opts.port)
 

@@ -6,7 +6,7 @@ local setmetatable = setmetatable
 
 local _M = {}
 
-local mt = { __index = _M }
+local mt = {__index = _M}
 
 function _M.new(service_id, credentials, usage)
   local self = setmetatable({}, mt)

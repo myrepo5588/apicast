@@ -5,7 +5,7 @@ local concat = table.concat
 local sort = table.sort
 local unpack = table.unpack
 local ngx_re = ngx.re
-local new_tab = require('resty.core.base').new_tab
+local new_tab = require("resty.core.base").new_tab
 
 local _M = {}
 
@@ -26,14 +26,14 @@ local function metrics_part_in_key(usage)
 
   -- Need to sort the metrics. Otherwise, same metrics but in different order,
   -- would end up in a different key.
-  local metrics = { unpack(usage.metrics) } -- Does not modify the original.
+  local metrics = {unpack(usage.metrics)} -- Does not modify the original.
   sort(metrics)
 
   for _, metric in ipairs(metrics) do
     insert(usages, format("%s=%s", metric, deltas[metric]))
   end
 
-  return format("metrics:%s", concat(usages, ';'))
+  return format("metrics:%s", concat(usages, ";"))
 end
 
 local regexes_report_key = {
@@ -53,13 +53,12 @@ end
 function _M.key_for_batched_report(service_id, credentials, metric_name)
   local creds_part = creds_part_in_key(credentials)
 
-  return format("service_id:%s,%s,metric:%s",
-                service_id, creds_part, metric_name)
+  return format("service_id:%s,%s,metric:%s", service_id, creds_part, metric_name)
 end
 
 function _M.report_from_key_batched_report(key, value)
   for _, regex in ipairs(regexes_report_key) do
-    local match = ngx_re.match(key, regex, 'oj')
+    local match = ngx_re.match(key, regex, "oj")
 
     if match then
       -- some credentials will be nil.

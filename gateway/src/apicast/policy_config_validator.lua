@@ -2,9 +2,9 @@
 -- @module policy_config_validator
 -- Validates a policy configuration against a policy config JSON schema.
 
-local jsonschema = require('jsonschema')
+local jsonschema = require("jsonschema")
 
-local _M = { }
+local _M = {}
 
 --- Validate a policy configuration
 -- Checks if a policy configuration is valid according to the given schema.

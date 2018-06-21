@@ -1,1 +1,1 @@
-return require('headers')
+return require("headers")

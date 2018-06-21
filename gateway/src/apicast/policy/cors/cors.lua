@@ -13,8 +13,8 @@
 -- by default, 'Access-Control-Allow-Origin' in the response will be set to
 -- 'example.com' too.
 
-local policy = require('apicast.policy')
-local _M = policy.new('CORS Policy')
+local policy = require("apicast.policy")
+local _M = policy.new("CORS Policy")
 
 local new = _M.new
 
@@ -32,27 +32,31 @@ end
 
 local function set_access_control_allow_headers(allow_headers)
   local value = allow_headers or ngx.var.http_access_control_request_headers
-  ngx.header['Access-Control-Allow-Headers'] = value
+  ngx.header["Access-Control-Allow-Headers"] = value
 end
 
 local function set_access_control_allow_methods(allow_methods)
   local value = allow_methods or ngx.var.http_access_control_request_method
-  ngx.header['Access-Control-Allow-Methods'] = value
+  ngx.header["Access-Control-Allow-Methods"] = value
 end
 
 local function set_access_control_allow_origin(allow_origin, default)
-  ngx.header['Access-Control-Allow-Origin'] = allow_origin or default
+  ngx.header["Access-Control-Allow-Origin"] = allow_origin or default
 end
 
 local function set_access_control_allow_credentials(allow_credentials)
   local value = allow_credentials
-  if value == nil then value = true end
-  ngx.header['Access-Control-Allow-Credentials'] = value
+  if value == nil then
+    value = true
+  end
+  ngx.header["Access-Control-Allow-Credentials"] = value
 end
 
 local function set_cors_headers(config)
   local origin = ngx.var.http_origin
-  if not origin then return end
+  if not origin then
+    return
+  end
 
   set_access_control_allow_headers(config.allow_headers)
   set_access_control_allow_methods(config.allow_methods)
@@ -67,9 +71,7 @@ local function cors_preflight_response()
 end
 
 local function is_cors_preflight()
-  return ngx.req.get_method() == 'OPTIONS' and
-         ngx.var.http_origin and
-         ngx.var.http_access_control_request_method
+  return ngx.req.get_method() == "OPTIONS" and ngx.var.http_origin and ngx.var.http_access_control_request_method
 end
 
 function _M.rewrite(_)

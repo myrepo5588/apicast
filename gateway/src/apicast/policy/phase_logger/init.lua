@@ -1,1 +1,1 @@
-return require('phase_logger')
+return require("phase_logger")

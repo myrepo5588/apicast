@@ -1,1 +1,1 @@
-return require('3scale_referrer')
+return require("3scale_referrer")

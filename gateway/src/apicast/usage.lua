@@ -8,7 +8,7 @@ local insert = table.insert
 
 local _M = {}
 
-local mt = { __index = _M }
+local mt = {__index = _M}
 
 --- Initialize a usage.
 -- @return usage New usage.

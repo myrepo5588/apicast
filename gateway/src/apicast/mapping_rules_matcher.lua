@@ -5,7 +5,7 @@
 
 local ipairs = ipairs
 local insert = table.insert
-local Usage = require('apicast.usage')
+local Usage = require("apicast.usage")
 
 local _M = {}
 

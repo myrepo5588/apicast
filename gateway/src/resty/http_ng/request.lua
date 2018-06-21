@@ -15,17 +15,17 @@ local setmetatable = setmetatable
 -- @usage http.get(uri, { ssl = { verify = false }})
 -- @usage http.get(uri, { headers = { my_header = 'value' }})
 
-local request = { }
+local request = {}
 
-request.headers = require 'resty.http_ng.headers'
+request.headers = require "resty.http_ng.headers"
 
 function request.extract_headers(req)
   local options = req.options or {}
   local headers = request.headers.new(options.headers)
 
-  headers.user_agent = headers.user_agent or 'APIcast (+https://www.apicast.io)'
+  headers.user_agent = headers.user_agent or "APIcast (+https://www.apicast.io)"
   headers.host = headers.host or match(req.url, "^.+://([^/]+)")
-  headers.connection = headers.connection or 'Keep-Alive'
+  headers.connection = headers.connection or "Keep-Alive"
 
   options.headers = nil
 
@@ -42,13 +42,17 @@ function request.new(req)
   req.client = req.client or {}
 
   req.headers = request.extract_headers(req)
-  req.options.ssl = req.options.ssl or { verify = true }
+  req.options.ssl = req.options.ssl or {verify = true}
 
-  setmetatable(req, {
-    __index =  {
-      serialize = req.serializer or function() end
+  setmetatable(
+    req,
+    {
+      __index = {
+        serialize = req.serializer or function()
+          end
+      }
     }
-  })
+  )
 
   req.serialize(req)
 

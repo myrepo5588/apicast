@@ -1,10 +1,10 @@
-local balancer = require('apicast.balancer')
+local balancer = require("apicast.balancer")
 local math = math
 local setmetatable = setmetatable
 
-local user_agent = require('apicast.user_agent')
+local user_agent = require("apicast.user_agent")
 
-local _M = require('apicast.policy').new('APIcast', require('apicast.version'))
+local _M = require("apicast.policy").new("APIcast", require("apicast.version"))
 
 local mt = {
   __index = _M
@@ -12,8 +12,7 @@ local mt = {
 
 --- This is called when APIcast boots the master process.
 function _M.new()
-  return setmetatable({
-  }, mt)
+  return setmetatable({}, mt)
 end
 
 function _M.init()
@@ -21,7 +20,9 @@ function _M.init()
 
   math.randomseed(ngx.now())
   -- First calls to math.random after a randomseed tend to be similar; discard them
-  for _=1,3 do math.random() end
+  for _ = 1, 3 do
+    math.random()
+  end
 end
 
 function _M.cleanup()
@@ -57,20 +58,24 @@ function _M:rewrite(context)
 end
 
 function _M:post_action(context)
-  if context.skip_apicast_post_action then return end
+  if context.skip_apicast_post_action then
+    return
+  end
 
   local p = context and context.proxy or ngx.ctx.proxy or self.proxy
 
   if p then
     return p:post_action(context)
   else
-    ngx.log(ngx.ERR, 'could not find proxy for request')
-    return nil, 'no proxy for request'
+    ngx.log(ngx.ERR, "could not find proxy for request")
+    return nil, "no proxy for request"
   end
 end
 
 function _M:access(context)
-  if context.skip_apicast_access then return end
+  if context.skip_apicast_access then
+    return
+  end
 
   local ctx = ngx.ctx
   local p = context and context.proxy or ctx.proxy or self.proxy

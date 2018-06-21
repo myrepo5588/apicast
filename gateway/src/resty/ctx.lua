@@ -2,12 +2,12 @@
 -- Module for sharing ngx.ctx to subrequests.
 -- @module resty.ctx
 
-local ffi = require 'ffi'
-local debug = require 'debug'
+local ffi = require "ffi"
+local debug = require "debug"
 local base = require "resty.core.base"
 
 -- to get FFI definitions
-require 'resty.core.ctx'
+require "resty.core.ctx"
 
 local registry = debug.getregistry()
 local getfenv = getfenv
@@ -16,8 +16,7 @@ local FFI_NO_REQ_CTX = base.FFI_NO_REQ_CTX
 local error = error
 local tonumber = tonumber
 
-local _M = {
-}
+local _M = {}
 
 --- Return ctx reference number
 -- @raise no request found, no request ctx found
@@ -43,7 +42,7 @@ function _M.ref()
   return ctx_ref
 end
 
-_M.var = 'ctx_ref'
+_M.var = "ctx_ref"
 
 --- Store ctx reference in ngx.var
 -- @tparam ?string var variable name, defaults to ctx_ref

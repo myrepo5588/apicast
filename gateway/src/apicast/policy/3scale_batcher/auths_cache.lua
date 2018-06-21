@@ -1,6 +1,6 @@
-local keys_helper = require('apicast.policy.3scale_batcher.keys_helper')
+local keys_helper = require("apicast.policy.3scale_batcher.keys_helper")
 
-local re = require('ngx.re')
+local re = require("ngx.re")
 local re_split = re.split
 
 local setmetatable = setmetatable
@@ -9,7 +9,7 @@ local tonumber = tonumber
 
 local _M = {}
 
-local mt = { __index = _M }
+local mt = {__index = _M}
 
 --- Initialize a cache for authorizations.
 -- @tparam storage ngx.shared.dict Shared dict to store the authorizations
@@ -37,10 +37,12 @@ function _M:get(transaction)
   local key = keys_helper.key_for_cached_auth(transaction)
   local cached_value = self.storage:get(key)
 
-  if not cached_value then return nil end
+  if not cached_value then
+    return nil
+  end
 
-  local split_val = re_split(cached_value, ':', 'oj', nil, 2)
-  return { status = tonumber(split_val[1]), rejection_reason = split_val[2] }
+  local split_val = re_split(cached_value, ":", "oj", nil, 2)
+  return {status = tonumber(split_val[1]), rejection_reason = split_val[2]}
 end
 
 --- Store an authorization in the cache.
@@ -54,7 +56,7 @@ function _M:set(transaction, auth_status, rejection_reason)
 
   local ok, err = self.storage:set(key, val_to_cache, self.ttl)
   if not ok then
-    ngx.log(ngx.ERR, 'Failed to set value in storage: ', err)
+    ngx.log(ngx.ERR, "Failed to set value in storage: ", err)
   end
 end
 

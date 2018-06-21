@@ -1,1 +1,1 @@
-return require('url_rewriting')
+return require("url_rewriting")

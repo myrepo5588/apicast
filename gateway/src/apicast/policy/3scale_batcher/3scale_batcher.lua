@@ -1,20 +1,20 @@
-local backend_client = require('apicast.backend_client')
-local AuthsCache = require('auths_cache')
-local ReportsBatcher = require('reports_batcher')
-local keys_helper = require('keys_helper')
-local policy = require('apicast.policy')
-local errors = require('apicast.errors')
-local reporter = require('reporter')
-local Transaction = require('transaction')
-local http_ng_resty = require('resty.http_ng.backend.resty')
-local semaphore = require('ngx.semaphore')
+local backend_client = require("apicast.backend_client")
+local AuthsCache = require("auths_cache")
+local ReportsBatcher = require("reports_batcher")
+local keys_helper = require("keys_helper")
+local policy = require("apicast.policy")
+local errors = require("apicast.errors")
+local reporter = require("reporter")
+local Transaction = require("transaction")
+local http_ng_resty = require("resty.http_ng.backend.resty")
+local semaphore = require("ngx.semaphore")
 
 local ipairs = ipairs
 
 local default_auths_ttl = 10
 local default_batch_reports_seconds = 10
 
-local _M = policy.new('Caching policy')
+local _M = policy.new("Caching policy")
 
 local new = _M.new
 
@@ -24,11 +24,9 @@ function _M.new(config)
   local auths_ttl = config.auths_ttl or default_auths_ttl
   self.auths_cache = AuthsCache.new(ngx.shared.cached_auths, auths_ttl)
 
-  self.reports_batcher = ReportsBatcher.new(
-    ngx.shared.batched_reports, 'batched_reports_locks')
+  self.reports_batcher = ReportsBatcher.new(ngx.shared.batched_reports, "batched_reports_locks")
 
-  self.batch_reports_seconds = config.batch_report_seconds or
-                               default_batch_reports_seconds
+  self.batch_reports_seconds = config.batch_report_seconds or default_batch_reports_seconds
 
   self.report_timer_on = false
 
@@ -59,7 +57,7 @@ local function format_usage(usage)
 
   for _, metric in ipairs(usage_metrics) do
     local delta = usage_deltas[metric]
-    res['usage[' .. metric .. ']'] = delta
+    res["usage[" .. metric .. "]"] = delta
   end
 
   return res
@@ -74,7 +72,7 @@ local function report(_, service_id, backend, reports_batcher)
   local reports = reports_batcher:get_all(service_id)
 
   if reports then
-    ngx.log(ngx.DEBUG, '3scale batcher report timer got ', #reports, ' reports')
+    ngx.log(ngx.DEBUG, "3scale batcher report timer got ", #reports, " reports")
   end
 
   -- TODO: verify if we should limit the number of reports sent in a sigle req
@@ -93,12 +91,10 @@ local function ensure_report_timer_on(self, service_id, backend)
 
   if check_timer then
     if not self.report_timer_on then
-      ngx.timer.every(self.batch_reports_seconds, report,
-        service_id, backend, self.reports_batcher)
+      ngx.timer.every(self.batch_reports_seconds, report, service_id, backend, self.reports_batcher)
 
       self.report_timer_on = true
-      ngx.log(ngx.DEBUG, 'scheduled 3scale batcher report timer every ',
-                         self.batch_reports_seconds, ' seconds')
+      ngx.log(ngx.DEBUG, "scheduled 3scale batcher report timer every ", self.batch_reports_seconds, " seconds")
     end
 
     self.semaphore_report_timer:post()
@@ -106,11 +102,11 @@ local function ensure_report_timer_on(self, service_id, backend)
 end
 
 local function rejection_reason_from_headers(response_headers)
-  return response_headers and response_headers['3scale-rejection-reason']
+  return response_headers and response_headers["3scale-rejection-reason"]
 end
 
 local function error(service, rejection_reason)
-  if rejection_reason == 'limits_exceeded' then
+  if rejection_reason == "limits_exceeded" then
     return errors.limits_exceeded(service)
   else
     return errors.authorization_failed(service)
@@ -179,8 +175,7 @@ function _M:access(context)
     if backend_status == 200 then
       handle_backend_ok(self, transaction, cache_handler)
     elseif backend_status >= 400 and backend_status < 500 then
-      handle_backend_denied(
-        self, service, transaction, backend_status, backend_res.headers, cache_handler)
+      handle_backend_denied(self, service, transaction, backend_status, backend_res.headers, cache_handler)
     else
       handle_backend_error(self, service, transaction, cache_handler)
     end

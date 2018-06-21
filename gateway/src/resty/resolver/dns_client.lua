@@ -1,23 +1,26 @@
-local resty_resolver = require 'resty.dns.resolver'
+local resty_resolver = require "resty.dns.resolver"
 
 local setmetatable = setmetatable
 local insert = table.insert
 
 local _M = {
-  _VERSION = '0.1'
+  _VERSION = "0.1"
 }
-local mt = { __index = _M }
+local mt = {__index = _M}
 
 function _M.new(_, options)
   local resolvers = {}
   local opts = options or {}
   local nameservers = opts.nameservers or {}
 
-  return setmetatable({
-    initialized = false,
-    resolvers = resolvers,
-    nameservers = nameservers
-  }, mt)
+  return setmetatable(
+    {
+      initialized = false,
+      resolvers = resolvers,
+      nameservers = nameservers
+    },
+    mt
+  )
 end
 
 function _M:instance(nameservers)
@@ -25,7 +28,7 @@ function _M:instance(nameservers)
   local resolver = ctx.dns
 
   if not resolver then
-    resolver = self:new({ nameservers = nameservers })
+    resolver = self:new({nameservers = nameservers})
     ctx.dns = resolver
   end
 
@@ -37,25 +40,31 @@ function _M:init_resolvers()
   local ns = self.nameservers
 
   if not resolvers or not ns then
-    return nil, 'not initialized'
+    return nil, "not initialized"
   end
 
-  ngx.log(ngx.DEBUG, 'initializing ', #ns, ' nameservers')
+  ngx.log(ngx.DEBUG, "initializing ", #ns, " nameservers")
 
-  for i=1,#ns do
-    local resolver, err = resty_resolver:new({
-      nameservers = { ns[i] },
-      timeout = 2900
-    })
+  for i = 1, #ns do
+    local resolver, err =
+      resty_resolver:new(
+      {
+        nameservers = {ns[i]},
+        timeout = 2900
+      }
+    )
 
     if resolver then
-      insert(resolvers, {
-        nameserver = ns[i],
-        resolver = resolver
-      })
-      ngx.log(ngx.DEBUG, 'nameserver ', ns[i][1],':',ns[i][2] or 53, ' initialized')
+      insert(
+        resolvers,
+        {
+          nameserver = ns[i],
+          resolver = resolver
+        }
+      )
+      ngx.log(ngx.DEBUG, "nameserver ", ns[i][1], ":", ns[i][2] or 53, " initialized")
     else
-      ngx.log(ngx.WARN, 'nameserver ', ns[i][1],':',ns[i][2] or 53, ' not initialized: ', err)
+      ngx.log(ngx.WARN, "nameserver ", ns[i][1], ":", ns[i][2] or 53, " not initialized: ", err)
     end
   end
 
@@ -65,14 +74,14 @@ function _M:init_resolvers()
 end
 
 local function query(resolver, qname, opts, nameserver)
-  ngx.log(ngx.DEBUG, 'resolver query: ', qname, ' nameserver: ', nameserver[1],':', nameserver[2] or 53)
+  ngx.log(ngx.DEBUG, "resolver query: ", qname, " nameserver: ", nameserver[1], ":", nameserver[2] or 53)
   return resolver:query(qname, opts)
 end
 
 local function serial_query(resolvers, qname, opts)
   local answers, err
 
-  for i=1, #resolvers do
+  for i = 1, #resolvers do
     answers, err = query(resolvers[i].resolver, qname, opts, resolvers[i].nameserver)
 
     if answers and not answers.errcode and not err then

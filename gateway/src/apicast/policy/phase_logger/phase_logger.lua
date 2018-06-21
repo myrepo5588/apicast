@@ -2,11 +2,13 @@
 -- the nginx phases. It's useful when testing to make sure that all the phases
 -- are executed.
 
-local policy = require('apicast.policy')
-local _M = policy.new('Phase logger')
+local policy = require("apicast.policy")
+local _M = policy.new("Phase logger")
 
 for _, phase in policy.phases() do
-  _M[phase] = function() ngx.log(ngx.DEBUG, 'running phase: ', phase) end
+  _M[phase] = function()
+    ngx.log(ngx.DEBUG, "running phase: ", phase)
+  end
 end
 
 return _M

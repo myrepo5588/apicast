@@ -4,33 +4,34 @@
 -- https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URIs
 local _M = {}
 
-local MimeType = require('resty.mime')
-local cjson = require('cjson')
+local MimeType = require("resty.mime")
+local cjson = require("cjson")
 
-local pattern = [[^data:(?<mediatype>[a-z]+\/[a-z0-9-+.]+(?<charset>;[a-z-]+=[a-z0-9-]+)?)?(?<base64>;base64)?,(?<data>[a-z0-9!$&',()*+;=\-._~:@\/?%\s]*?)$]]
+local pattern =
+  [[^data:(?<mediatype>[a-z]+\/[a-z0-9-+.]+(?<charset>;[a-z-]+=[a-z0-9-]+)?)?(?<base64>;base64)?,(?<data>[a-z0-9!$&',()*+;=\-._~:@\/?%\s]*?)$]]
 local re_match = ngx.re.match
 
 local function parse(url)
-  local match, err = re_match(url, pattern, 'oji')
+  local match, err = re_match(url, pattern, "oji")
 
   if match then
-
     return {
       mime_type = MimeType.new(match.mediatype),
       data = match.data,
-      base64 = not not match.base64,
+      base64 = not (not match.base64)
     }
   else
-    return nil, err or 'not valid data-url'
+    return nil, err or "not valid data-url"
   end
 end
 
 local decoders = {
-  ['application/json'] = function(data) return cjson.encode(cjson.decode(data)) end,
+  ["application/json"] = function(data)
+    return cjson.encode(cjson.decode(data))
+  end
 }
 
 local function decode(data_url)
-
   local data = data_url.data
 
   if data_url.base64 then
@@ -46,17 +47,18 @@ local function decode(data_url)
   if decoder then
     return decoder(data)
   else
-    return nil, 'unsupported mediatype'
+    return nil, "unsupported mediatype"
   end
 end
 
 function _M.call(uri)
   local data_url, err = parse(uri)
 
-  if not data_url then return nil, err end
+  if not data_url then
+    return nil, err
+  end
 
   return decode(data_url)
 end
-
 
 return _M

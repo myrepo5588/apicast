@@ -1,13 +1,13 @@
-local resty_http = require 'resty.http'
-local resty_resolver = require 'resty.resolver'
-local round_robin = require 'resty.balancer.round_robin'
+local resty_http = require "resty.http"
+local resty_resolver = require "resty.resolver"
+local round_robin = require "resty.balancer.round_robin"
 
 local setmetatable = setmetatable
 local unpack = unpack
 
-local _M = setmetatable({}, { __index = resty_http })
+local _M = setmetatable({}, {__index = resty_http})
 
-local mt = { __index = _M }
+local mt = {__index = _M}
 
 function _M.new()
   local http = resty_http:new()
@@ -23,10 +23,10 @@ function _M.connect(self, host, port)
   local balancer = self.balancer
 
   if not resolver or not balancer then
-    return nil, 'not initialized'
+    return nil, "not initialized"
   end
 
-  local servers = resolver:get_servers(host, { port = port })
+  local servers = resolver:get_servers(host, {port = port})
   local peers = balancer:peers(servers)
   local peer = balancer:select_peer(peers)
 

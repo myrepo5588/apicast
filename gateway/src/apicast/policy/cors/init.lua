@@ -1,1 +1,1 @@
-return require('cors')
+return require("cors")

@@ -5,8 +5,8 @@
 -- And even loading several independent copies of the same policy with no shared state.
 -- Each object returned by the loader is new table and shares only shared APIcast code.
 
-local sandbox = require('resty.sandbox')
-local cjson = require('cjson')
+local sandbox = require("resty.sandbox")
+local cjson = require("cjson")
 
 local format = string.format
 local ipairs = ipairs
@@ -18,25 +18,24 @@ local pcall = pcall
 
 local _M = {}
 
-local resty_env = require('resty.env')
-local re = require('ngx.re')
+local resty_env = require("resty.env")
+local re = require("ngx.re")
 
 do
   local function apicast_dir()
-    return resty_env.value('APICAST_DIR') or '.'
+    return resty_env.value("APICAST_DIR") or "."
   end
 
   local function policy_load_path()
-    return resty_env.value('APICAST_POLICY_LOAD_PATH') or
-      format('%s/policies', apicast_dir())
+    return resty_env.value("APICAST_POLICY_LOAD_PATH") or format("%s/policies", apicast_dir())
   end
 
   function _M.policy_load_paths()
-    return re.split(policy_load_path(), ':', 'oj')
+    return re.split(policy_load_path(), ":", "oj")
   end
 
   function _M.builtin_policy_load_path()
-    return resty_env.value('APICAST_BUILTIN_POLICY_LOAD_PATH') or format('%s/src/apicast/policy', apicast_dir())
+    return resty_env.value("APICAST_BUILTIN_POLICY_LOAD_PATH") or format("%s/src/apicast/policy", apicast_dir())
   end
 end
 
@@ -45,20 +44,23 @@ end
 -- sets TEST_NGINX_BINARY so we can use it to detect whether we are running the
 -- tests.
 local function policy_config_validation_is_enabled()
-  return resty_env.enabled('APICAST_VALIDATE_POLICY_CONFIGS')
-    or resty_env.value('TEST_NGINX_BINARY')
+  return resty_env.enabled("APICAST_VALIDATE_POLICY_CONFIGS") or resty_env.value("TEST_NGINX_BINARY")
 end
 
-local policy_config_validator = { validate_config = function() return true end }
+local policy_config_validator = {
+  validate_config = function()
+    return true
+  end
+}
 if policy_config_validation_is_enabled() then
-  policy_config_validator = require('apicast.policy_config_validator')
+  policy_config_validator = require("apicast.policy_config_validator")
 end
 
 local function read_manifest(path)
-  local handle = io.open(format('%s/%s', path, 'apicast-policy.json'))
+  local handle = io.open(format("%s/%s", path, "apicast-policy.json"))
 
   if handle then
-    local contents = handle:read('*a')
+    local contents = handle:read("*a")
 
     handle:close()
 
@@ -67,19 +69,17 @@ local function read_manifest(path)
 end
 
 local function lua_load_path(load_path)
-  return format('%s/?.lua', load_path)
+  return format("%s/?.lua", load_path)
 end
 
 local function load_manifest(name, version, path)
   local manifest = read_manifest(path)
 
   if manifest then
-      if manifest.version ~= version then
-        ngx.log(ngx.ERR, 'Not loading policy: ', name,
-          ' path: ', path,
-          ' version: ', version, '~= ', manifest.version)
-        return
-      end
+    if manifest.version ~= version then
+      ngx.log(ngx.ERR, "Not loading policy: ", name, " path: ", path, " version: ", version, "~= ", manifest.version)
+      return
+    end
 
     return manifest, lua_load_path(path)
   end
@@ -91,27 +91,23 @@ local function with_config_validator(policy, policy_config_schema)
   local original_new = policy.new
 
   local new_with_validator = function(config)
-    local is_valid, err = policy_config_validator.validate_config(
-      config, policy_config_schema)
+    local is_valid, err = policy_config_validator.validate_config(config, policy_config_schema)
 
     if not is_valid then
-      error(format('Invalid config for policy: %s', err))
+      error(format("Invalid config for policy: %s", err))
     end
 
     return original_new(config)
   end
 
-  return setmetatable(
-    { new = new_with_validator },
-    { __index = policy }
-  )
+  return setmetatable({new = new_with_validator}, {__index = policy})
 end
 
 function _M:load_path(name, version, paths)
   local failures = {}
 
   for _, path in ipairs(paths or self.policy_load_paths()) do
-    local manifest, load_path = load_manifest(name, version, format('%s/%s/%s', path, name, version) )
+    local manifest, load_path = load_manifest(name, version, format("%s/%s/%s", path, name, version))
 
     if manifest then
       return load_path, manifest.configuration
@@ -120,8 +116,8 @@ function _M:load_path(name, version, paths)
     end
   end
 
-  if version == 'builtin' then
-    local manifest, load_path = load_manifest(name, version, format('%s/%s', self.builtin_policy_load_path(), name) )
+  if version == "builtin" then
+    local manifest, load_path = load_manifest(name, version, format("%s/%s", self.builtin_policy_load_path(), name))
 
     if manifest then
       return load_path, manifest.configuration
@@ -133,25 +129,32 @@ function _M:load_path(name, version, paths)
   return nil, nil, failures
 end
 
-local package_cache = setmetatable({}, {
-  __index = function(t, k) local n = { }; t[k] = n; return n end
-})
+local package_cache =
+  setmetatable(
+  {},
+  {
+    __index = function(t, k)
+      local n = {}
+      t[k] = n
+      return n
+    end
+  }
+)
 
 function _M:call(name, version, dir)
-  local v = version or 'builtin'
+  local v = version or "builtin"
   local load_path, policy_config_schema, invalid_paths = self:load_path(name, v, dir)
 
-  local cache_key = concat({name, v, dir and concat(dir, ',') or '' }, '-')
+  local cache_key = concat({name, v, dir and concat(dir, ",") or ""}, "-")
 
   local cache = package_cache[cache_key]
-  local loader = sandbox.new(load_path and { load_path } or invalid_paths,
-          cache)
+  local loader = sandbox.new(load_path and {load_path} or invalid_paths, cache)
 
-  ngx.log(ngx.DEBUG, 'loading policy: ', name, ' version: ', v)
+  ngx.log(ngx.DEBUG, "loading policy: ", name, " version: ", v)
 
   -- passing the "exclusive" flag for the require so it does not fallback to native require
   -- it should load only policies and not other code and fail if there is no such policy
-  local res = loader('init', true)
+  local res = loader("init", true)
 
   if policy_config_validation_is_enabled() then
     return with_config_validator(res, policy_config_schema)
@@ -174,7 +177,7 @@ end
 function _M:get_all()
   local policy_modules = {}
 
-  local policy_manifests_loader = require('apicast.policy_manifests_loader')
+  local policy_manifests_loader = require("apicast.policy_manifests_loader")
   local manifests = policy_manifests_loader.get_all()
 
   for policy_name, policy_manifests in pairs(manifests) do
@@ -187,5 +190,4 @@ function _M:get_all()
   return policy_modules
 end
 
-
-return setmetatable(_M, { __call = _M.call })
+return setmetatable(_M, {__call = _M.call})

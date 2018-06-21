@@ -1,35 +1,37 @@
 local sub = string.sub
 local tonumber = tonumber
 
-local redis = require 'resty.redis'
-local env = require 'resty.env'
+local redis = require "resty.redis"
+local env = require "resty.env"
 
-local resty_resolver = require 'resty.resolver'
-local resty_balancer = require 'resty.balancer'
+local resty_resolver = require "resty.resolver"
+local resty_balancer = require "resty.balancer"
 
-local resty_url = require 'resty.url'
+local resty_url = require "resty.url"
 
 local _M = {} -- public interface
 
 local redis_conf = {
-  timeout   = 3000,  -- 3 seconds
+  timeout = 3000, -- 3 seconds
   keepalive = 10000, -- milliseconds
-  poolsize  = 1000   -- # connections
+  poolsize = 1000 -- # connections
 }
 
 -- private
 -- Logging Helpers
 function _M.show_table(t)
   local indent = 0 --arg[1] or 0
-  local indentStr=""
+  local indentStr = ""
   local msg
-  for _ = 1,indent do indentStr=indentStr.."  " end
+  for _ = 1, indent do
+    indentStr = indentStr .. "  "
+  end
 
-  for k,v in pairs(t) do
+  for k, v in pairs(t) do
     if type(v) == "table" then
-      msg = indentStr .. _M.show_table(v or '', indent+1)
+      msg = indentStr .. _M.show_table(v or "", indent + 1)
     else
-      msg = indentStr ..  k .. " => " .. v
+      msg = indentStr .. k .. " => " .. v
     end
     _M.log_message(msg)
   end
@@ -40,7 +42,7 @@ function _M.log_message(str)
 end
 
 function _M.newline()
-  ngx.log(0,"  ---   ")
+  ngx.log(0, "  ---   ")
 end
 
 function _M.log(content)
@@ -56,27 +58,26 @@ end
 
 -- Table Helpers
 function _M.keys(t)
-  local n=0
+  local n = 0
   local keyset = {}
-  for k,_ in pairs(t) do
-    n=n+1
-    keyset[n]=k
+  for k, _ in pairs(t) do
+    n = n + 1
+    keyset[n] = k
   end
   return keyset
 end
 -- End Table Helpers
 
-
 function _M.dump(o)
-  if type(o) == 'table' then
-    local s = '{ '
-    for k,v in pairs(o) do
-      if type(k) ~= 'number' then
-        k = '"'..k..'"'
+  if type(o) == "table" then
+    local s = "{ "
+    for k, v in pairs(o) do
+      if type(k) ~= "number" then
+        k = '"' .. k .. '"'
       end
-      s = s .. '['..k..'] = ' .. _M.dump(v) .. ','
+      s = s .. "[" .. k .. "] = " .. _M.dump(v) .. ","
     end
-    return s .. '} '
+    return s .. "} "
   else
     return tostring(o)
   end
@@ -90,10 +91,10 @@ end
 -- returns true iif all elems of f_req are among actual's keys
 function _M.required_params_present(f_req, actual)
   local req = {}
-  for k,_ in pairs(actual) do
+  for k, _ in pairs(actual) do
     req[k] = true
   end
-  for _,v in ipairs(f_req) do
+  for _, v in ipairs(f_req) do
     if not req[v] then
       return false
     end
@@ -101,12 +102,17 @@ function _M.required_params_present(f_req, actual)
   return true
 end
 
-local balancer = resty_balancer.new(function(peers) return peers[1] end)
+local balancer =
+  resty_balancer.new(
+  function(peers)
+    return peers[1]
+  end
+)
 
 function _M.resolve(host, port)
   local resolver = resty_resolver:instance()
 
-  local servers = resolver:get_servers(host, { port = port })
+  local servers = resolver:get_servers(host, {port = port})
   local peers = balancer:peers(servers)
   local peer = balancer:select_peer(peers)
 
@@ -123,11 +129,10 @@ end
 function _M.connect_redis(options)
   local opts = {}
 
-  local url = options and options.url or env.get('REDIS_URL')
-
+  local url = options and options.url or env.get("REDIS_URL")
 
   if url then
-    url = resty_url.split(url, 'redis')
+    url = resty_url.split(url, "redis")
     if url then
       opts.host = url[4]
       opts.port = url[5]
@@ -143,8 +148,8 @@ function _M.connect_redis(options)
 
   opts.timeout = options and options.timeout or redis_conf.timeout
 
-  local host = opts.host or env.get('REDIS_HOST') or "127.0.0.1"
-  local port = opts.port or env.get('REDIS_PORT') or 6379
+  local host = opts.host or env.get("REDIS_HOST") or "127.0.0.1"
+  local port = opts.port or env.get("REDIS_PORT") or 6379
 
   local red = redis:new()
 
@@ -182,14 +187,16 @@ end
 local xml_header_len = string.len('<?xml version="1.0" encoding="UTF-8"?>')
 
 function _M.match_xml_element(xml, element, value)
-  if not xml then return nil end
-  local pattern = string.format('<%s>%s</%s>', element, value, element)
+  if not xml then
+    return nil
+  end
+  local pattern = string.format("<%s>%s</%s>", element, value, element)
   return string.find(xml, pattern, xml_header_len, xml_header_len, true)
 end
 
 -- error and exist
 function _M.error(...)
-  if ngx.get_phase() == 'timer' then
+  if ngx.get_phase() == "timer" then
     return ...
   else
     ngx.status = ngx.HTTP_INTERNAL_SERVER_ERROR
@@ -214,10 +221,10 @@ end
 function _M.build_query(query)
   local qstr = ""
 
-  for i,v in pairs(query) do
-    qstr = qstr .. i .. '=' .. v .. '&'
+  for i, v in pairs(query) do
+    qstr = qstr .. i .. "=" .. v .. "&"
   end
-  return string.sub(qstr, 0, #qstr-1)
+  return string.sub(qstr, 0, #qstr - 1)
 end
 
 return _M

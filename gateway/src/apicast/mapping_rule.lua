@@ -15,55 +15,55 @@ local re_gsub = ngx.re.gsub
 
 local _M = {}
 
-local mt = { __index = _M }
+local mt = {__index = _M}
 
 local function hash_to_array(hash)
   local array = {}
 
-  for k,v in pairs(hash or {}) do
-    insert(array, { k, v })
+  for k, v in pairs(hash or {}) do
+    insert(array, {k, v})
   end
 
   return array
 end
 
 local function regexpify(pattern)
-  pattern = re_gsub(pattern, [[\?.*]], '', 'oj')
+  pattern = re_gsub(pattern, [[\?.*]], "", "oj")
   -- dollar sign is escaped by another $, see https://github.com/openresty/lua-nginx-module#ngxresub
-  pattern = re_gsub(pattern, [[\{.+?\}]], [[([\w-.~%!$$&'()*+,;=@:]+)]], 'oj')
-  pattern = re_gsub(pattern, [[\.]], [[\.]], 'oj')
+  pattern = re_gsub(pattern, [[\{.+?\}]], [[([\w-.~%!$$&'()*+,;=@:]+)]], "oj")
+  pattern = re_gsub(pattern, [[\.]], [[\.]], "oj")
   return pattern
 end
 
-local regex_variable = '\\{[-\\w_]+\\}'
+local regex_variable = "\\{[-\\w_]+\\}"
 
 local function matches_querystring_params(params, args)
   local match = true
 
-  for i=1, #params do
+  for i = 1, #params do
     local param = params[i][1]
     local expected = params[i][2]
-    local m, err = re_match(expected, regex_variable, 'oj')
+    local m, err = re_match(expected, regex_variable, "oj")
     local value = args[param]
 
     if m then
       if not value then -- regex variable have to have some value
-        ngx.log(ngx.DEBUG, 'check query params ', param,
-          ' value missing ', expected)
+        ngx.log(ngx.DEBUG, "check query params ", param, " value missing ", expected)
         match = false
         break
       end
     else
-      if err then ngx.log(ngx.ERR, 'check match error ', err) end
+      if err then
+        ngx.log(ngx.ERR, "check match error ", err)
+      end
 
       -- if many values were passed use the last one
-      if type(value) == 'table' then
+      if type(value) == "table" then
         value = value[#value]
       end
 
       if value ~= expected then -- normal variables have to have exact value
-        ngx.log(ngx.DEBUG, 'check query params does not match ',
-          param, ' value ' , value, ' == ', expected)
+        ngx.log(ngx.DEBUG, "check query params does not match ", param, " value ", value, " == ", expected)
         match = false
         break
       end
@@ -74,7 +74,7 @@ local function matches_querystring_params(params, args)
 end
 
 local function matches_uri(rule_pattern, uri)
-  return re_match(uri, format("^%s", rule_pattern), 'oj')
+  return re_match(uri, format("^%s", rule_pattern), "oj")
 end
 
 local function new(http_method, pattern, params, querystring_params, metric, delta)
@@ -86,7 +86,7 @@ local function new(http_method, pattern, params, querystring_params, metric, del
   self.pattern = pattern
   self.regexpified_pattern = regexpify(pattern)
   self.parameters = params
-  self.system_name = metric or error('missing metric name of rule')
+  self.system_name = metric or error("missing metric name of rule")
   self.delta = delta
 
   self.querystring_params = function(args)
@@ -126,9 +126,7 @@ end
 -- @tparam table args Table with the args and values of an HTTP request.
 -- @treturn boolean Whether the mapping rule matches the given request.
 function _M:matches(method, uri, args)
-  local match = self.method == method and
-      matches_uri(self.regexpified_pattern, uri) and
-      self.querystring_params(args)
+  local match = self.method == method and matches_uri(self.regexpified_pattern, uri) and self.querystring_params(args)
 
   -- match can be nil. Convert to boolean.
   return match == true

@@ -1,1 +1,1 @@
-return require('local_chain')
+return require("local_chain")

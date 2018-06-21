@@ -13,7 +13,7 @@ local sub = string.sub
 local ngx_re = ngx.re
 
 local normalize_exceptions = {
-  etag = 'ETag'
+  etag = "ETag"
 }
 
 local headers = {}
@@ -36,7 +36,7 @@ local regex_parts = [[[^_-]+]]
 local key_parts_capitalized = function(key)
   local parts = {}
 
-  for matches in ngx_re.gmatch(key, regex_parts, 'jo') do
+  for matches in ngx_re.gmatch(key, regex_parts, "jo") do
     insert(parts, capitalize(matches[0]))
   end
 
@@ -50,27 +50,27 @@ headers.normalize_key = function(key)
     return exception
   end
 
-  return concat(key_parts_capitalized(key), '-')
+  return concat(key_parts_capitalized(key), "-")
 end
 
 local header_mt = {
   __tostring = function(t)
     local tmp = {}
 
-    for k,v in pairs(t) do
-      if type(k) == 'string' then
+    for k, v in pairs(t) do
+      if type(k) == "string" then
         insert(tmp, k)
-      elseif type(v) == 'string' then
+      elseif type(v) == "string" then
         insert(tmp, v)
       end
     end
 
-    return concat(tmp, ', ')
+    return concat(tmp, ", ")
   end
 }
 
 headers.normalize_value = function(value)
-  if type(value) == 'table' and getmetatable(value) == nil then
+  if type(value) == "table" and getmetatable(value) == nil then
     return setmetatable(value, header_mt)
   else
     return value
@@ -81,7 +81,7 @@ headers.normalize = function(http_headers)
   http_headers = http_headers or {}
 
   local normalized = {}
-  for k,v in pairs(http_headers) do
+  for k, v in pairs(http_headers) do
     normalized[headers.normalize_key(k)] = headers.normalize_value(v)
   end
 

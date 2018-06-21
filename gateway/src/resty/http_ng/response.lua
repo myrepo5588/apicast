@@ -16,17 +16,15 @@ local setmetatable = setmetatable
 -- @field[type=string] body response body
 -- @field[type=bool] ok
 
-
 local response = {}
-response.headers = require 'resty.http_ng.headers'
-
+response.headers = require "resty.http_ng.headers"
 
 function response.new(request, status, headers, body)
-  assert(status, 'missing request status')
-  assert(body, 'missing response body')
+  assert(status, "missing request status")
+  assert(body, "missing response body")
 
   local mt = {}
-  mt['__index'] = function(table, key)
+  mt["__index"] = function(table, key)
     local generator = rawget(mt, key)
     if generator then
       rawset(table, key, generator(table))
@@ -41,9 +39,9 @@ function response.new(request, status, headers, body)
     request = request
   }
 
-  if type(body) == 'string' then
+  if type(body) == "string" then
     res.body = body
-  elseif type(body) == 'function' then
+  elseif type(body) == "function" then
     mt.body = body
   end
 
@@ -58,9 +56,9 @@ function response.new(request, status, headers, body)
 end
 
 function response.error(request, message)
-  assert(request, 'missing request')
-  assert(message, 'missing message')
-  return { ok = false, error = message, request = request, status = 0, headers = {} }
+  assert(request, "missing request")
+  assert(message, "missing message")
+  return {ok = false, error = message, request = request, status = 0, headers = {}}
 end
 
 return response

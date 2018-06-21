@@ -7,13 +7,17 @@ local setmetatable = setmetatable
 
 local _M = {}
 
-local mt = { __index = _M }
+local mt = {__index = _M}
 
 function _M.new(backend, options)
   local opts = options or {}
-  return setmetatable({
-    backend = backend, cache_store = opts.cache_store
-  }, mt)
+  return setmetatable(
+    {
+      backend = backend,
+      cache_store = opts.cache_store
+    },
+    mt
+  )
 end
 
 --- Send request and return the response

@@ -1,5 +1,5 @@
-local ReportsBatch = require('apicast.policy.3scale_batcher.reports_batch')
-local Usage = require('apicast.usage')
+local ReportsBatch = require("apicast.policy.3scale_batcher.reports_batch")
+local Usage = require("apicast.usage")
 
 local pairs = pairs
 
@@ -14,11 +14,7 @@ local function return_reports(service_id, batch, reports_batcher)
       usage:add(metric, value)
     end
 
-    reports_batcher:add(
-      service_id,
-      { [credentials_type] = credential },
-      usage
-    )
+    reports_batcher:add(service_id, {[credentials_type] = credential}, usage)
   end
 end
 

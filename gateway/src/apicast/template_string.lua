@@ -1,4 +1,4 @@
-local Liquid = require 'liquid'
+local Liquid = require "liquid"
 local LiquidTemplate = Liquid.Template
 local LiquidInterpreterContext = Liquid.InterpreterContext
 local LiquidFilterSet = Liquid.FilterSet
@@ -10,7 +10,7 @@ local pairs = pairs
 local format = string.format
 
 local LiquidTemplateString = {}
-local liquid_template_string_mt = { __index = LiquidTemplateString }
+local liquid_template_string_mt = {__index = LiquidTemplateString}
 
 -- Expose only ngx.* functions that we think could be useful and that do not
 -- have any side-effects.
@@ -67,23 +67,18 @@ end
 local liquid_resource_limit = LiquidResourceLimit:new(nil, nil, 0)
 
 function LiquidTemplateString.new(string)
-  return setmetatable({ template = LiquidTemplate:parse(string) },
-                      liquid_template_string_mt)
+  return setmetatable({template = LiquidTemplate:parse(string)}, liquid_template_string_mt)
 end
 
 function LiquidTemplateString:render(context)
-  return self.template:render(
-    LiquidInterpreterContext:new(context),
-    liquid_filter_set,
-    liquid_resource_limit
-  )
+  return self.template:render(LiquidInterpreterContext:new(context), liquid_filter_set, liquid_resource_limit)
 end
 
 local PlainTemplateString = {}
-local plain_template_string_mt = { __index = PlainTemplateString }
+local plain_template_string_mt = {__index = PlainTemplateString}
 
 function PlainTemplateString.new(string)
-  return setmetatable({ string = string }, plain_template_string_mt)
+  return setmetatable({string = string}, plain_template_string_mt)
 end
 
 function PlainTemplateString:render()
@@ -109,7 +104,7 @@ function _M.new(value, type)
   if template_mod then
     return template_mod.new(value)
   else
-    return nil, format('Invalid type specified: %s', type)
+    return nil, format("Invalid type specified: %s", type)
   end
 end
 

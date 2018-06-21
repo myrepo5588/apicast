@@ -1,7 +1,7 @@
-local random = require('resty.random')
-local ts = require('apicast.threescale_utils')
-local backend_client = require('apicast.backend_client')
-local http_ng_ngx = require('resty.http_ng.backend.ngx')
+local random = require("resty.random")
+local ts = require("apicast.threescale_utils")
+local backend_client = require("apicast.backend_client")
+local http_ng_ngx = require("resty.http_ng.backend.ngx")
 
 -- returns a unique string for the client_id. it will be short lived
 local function nonce(client_id)
@@ -21,7 +21,7 @@ local function extract_params()
   params.response_type = uri_params.response_type
   params.client_id = uri_params.client_id
   params.redirect_uri = uri_params.redirect_uri
-  params.scope =  uri_params.scope
+  params.scope = uri_params.scope
   params.client_state = uri_params.state
 
   return params
@@ -35,12 +35,17 @@ local function persist_nonce(service_id, params)
   local pre_token = generate_access_token(params.client_id)
   params.tok = pre_token
 
-  local ok, err = red:hmset(service_id .. "#tmp_data:".. n,
-    {client_id = params.client_id,
+  local ok, err =
+    red:hmset(
+    service_id .. "#tmp_data:" .. n,
+    {
+      client_id = params.client_id,
       redirect_uri = params.redirect_uri,
       plan_id = params.scope,
       access_token = pre_token,
-      state = params.client_state})
+      state = params.client_state
+    }
+  )
 
   if not ok then
     ts.error(ts.dump(err))
@@ -56,13 +61,13 @@ local function redirect_to_auth(params)
   local service = ngx.ctx.service
 
   if params.error then
-    ngx.log(ngx.DEBUG, 'oauth params error: ' .. tostring(params.error))
+    ngx.log(ngx.DEBUG, "oauth params error: " .. tostring(params.error))
   else
     persist_nonce(service.id, params)
   end
 
   local args = ts.build_query(params)
-  local login_url = service.oauth_login_url or error('missing oauth login url')
+  local login_url = service.oauth_login_url or error("missing oauth login url")
 
   ngx.header.content_type = "application/x-www-form-urlencoded"
   return ngx.redirect(login_url .. "?" .. args)
@@ -70,9 +75,9 @@ end
 
 -- Authorizes the client for the given scope
 local function authorize(params)
-  local required_params = {'client_id', 'redirect_uri', 'response_type', 'scope'}
+  local required_params = {"client_id", "redirect_uri", "response_type", "scope"}
 
-  if params["response_type"] ~= 'code' then
+  if params["response_type"] ~= "code" then
     params.error = "unsupported_response_type"
   elseif not ts.required_params_present(required_params, params) then
     params.error = "invalid_request"
@@ -81,19 +86,18 @@ local function authorize(params)
   redirect_to_auth(params)
 end
 
-
 -- Check valid params ( client_id / secret / redirect_url, whichever are sent) against 3scale
 local function check_credentials(service, params)
-  local backend = assert(backend_client:new(service, http_ng_ngx), 'missing backend')
-  local res = backend:authorize({  app_id = params.client_id, redirect_uri = params.redirect_uri })
+  local backend = assert(backend_client:new(service, http_ng_ngx), "missing backend")
+  local res = backend:authorize({app_id = params.client_id, redirect_uri = params.redirect_uri})
 
   ngx.log(ngx.INFO, "[oauth] Checking client credentials, status: ", res.status, " body: ", res.body)
 
-  return res.status == 200 and ts.match_xml_element(res.body, 'authorized', true)
+  return res.status == 200 and ts.match_xml_element(res.body, "authorized", true)
 end
 
 local _M = {
-  VERSION = '0.0.1'
+  VERSION = "0.0.1"
 }
 
 function _M.call()
@@ -102,10 +106,10 @@ function _M.call()
   local is_valid = check_credentials(service, params)
 
   if is_valid then
-    ngx.log(ngx.DEBUG, 'oauth params valid')
+    ngx.log(ngx.DEBUG, "oauth params valid")
     authorize(params)
   else
-    ngx.log(ngx.DEBUG, 'oauth params invalid')
+    ngx.log(ngx.DEBUG, "oauth params invalid")
     params.error = "invalid_client"
     redirect_to_auth(params)
   end

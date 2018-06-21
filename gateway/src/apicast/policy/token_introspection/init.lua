@@ -1,1 +1,1 @@
-return require('token_introspection')
+return require("token_introspection")

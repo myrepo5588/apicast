@@ -3,9 +3,9 @@ local require = require
 local dofile = dofile
 local type = type
 
-require('apicast.loader')
+require("apicast.loader")
 
-local env = require 'resty.env'
+local env = require "resty.env"
 
 local function error_message(error)
   ngx.log(ngx.DEBUG, error)
@@ -23,8 +23,8 @@ local prequire = function(file)
   end
 
   if not ok and ret then
-    if type(ret) == 'userdata' then
-      ngx.log(ngx.WARN, 'cyclic require detected: ', debug.traceback())
+    if type(ret) == "userdata" then
+      ngx.log(ngx.WARN, "cyclic require detected: ", debug.traceback())
     elseif prev then
       ngx.log(ngx.WARN, prev)
     end
@@ -34,19 +34,19 @@ local prequire = function(file)
   return ok, ret
 end
 
-local name = env.value('APICAST_MODULE') or 'apicast.policy.apicast'
+local name = env.value("APICAST_MODULE") or "apicast.policy.apicast"
 
 local ok, mod = prequire(name)
 
 if ok and mod then
-  if type(mod) == 'table' then
+  if type(mod) == "table" then
     if mod.new then
       return mod.new()
     else
       return mod
     end
   else
-    ngx.log(ngx.ERR, 'module ', name, ' did not return a table but: ', type(mod))
+    ngx.log(ngx.ERR, "module ", name, " did not return a table but: ", type(mod))
     return false
   end
 else

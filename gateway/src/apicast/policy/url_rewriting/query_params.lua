@@ -4,7 +4,7 @@ local type = type
 
 local _M = {}
 
-local mt = { __index = _M }
+local mt = {__index = _M}
 
 -- Note: This module calls 'ngx.req.set_uri_args()' on each operation
 -- If this becomes too costly, we can change it by exposing a method that calls
@@ -22,7 +22,7 @@ function _M.new(uri_args)
     self.args, get_args_err = ngx.req.get_uri_args()
 
     if not self.args then
-      ngx.log(ngx.ERR, 'Error while getting URI args: ', get_args_err)
+      ngx.log(ngx.ERR, "Error while getting URI args: ", get_args_err)
       return nil, get_args_err
     end
   end
@@ -38,8 +38,8 @@ end
 local function add_to_existing_arg(self, arg, value)
   -- When the argument has a single value, it is a string and needs to be
   -- converted to table so we can add a second one.
-  if type(self.args[arg]) ~= 'table' then
-    self.args[arg] = { self.args[arg] }
+  if type(self.args[arg]) ~= "table" then
+    self.args[arg] = {self.args[arg]}
   end
 
   insert(self.args[arg], value)

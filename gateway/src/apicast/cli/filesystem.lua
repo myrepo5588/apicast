@@ -3,7 +3,7 @@
 -- So far exposes only function - to recursively traverse a filesystem path.
 -- Workaround for https://github.com/stevedonovan/Penlight/issues/265
 
-local pl_path = require('pl.path')
+local pl_path = require("pl.path")
 local exists, isdir = pl_path.exists, pl_path.isdir
 local pl_path_dir = pl_path.dir
 local pl_path_join = pl_path.join
@@ -43,24 +43,30 @@ end
 
 --- Recursively list directory
 -- This is a copy of penlight's dir.dirtree
-return function ( d )
-  if not d then return nil end
+return function(d)
+  if not d then
+    return nil
+  end
 
-  local function yieldtree( dir )
-    for entry in ldir( dir ) do
-      if entry ~= '.' and entry ~= '..' then
+  local function yieldtree(dir)
+    for entry in ldir(dir) do
+      if entry ~= "." and entry ~= ".." then
         entry = pl_path_join(dir, entry)
 
-        if exists(entry) then  -- Just in case a symlink is broken.
+        if exists(entry) then -- Just in case a symlink is broken.
           local is_dir = isdir(entry)
-          co_yield( entry, is_dir )
+          co_yield(entry, is_dir)
           if is_dir then
-            yieldtree( entry )
+            yieldtree(entry)
           end
         end
       end
     end
   end
 
-  return co_wrap_iter(function() yieldtree( abspath(d) ) end)
+  return co_wrap_iter(
+    function()
+      yieldtree(abspath(d))
+    end
+  )
 end

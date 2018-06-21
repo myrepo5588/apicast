@@ -1,1 +1,1 @@
-return require('3scale_batcher')
+return require("3scale_batcher")

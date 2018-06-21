@@ -1,5 +1,5 @@
 local _M = {
-  _VERSION = '0.1',
+  _VERSION = "0.1",
   config = false
 }
 

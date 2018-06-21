@@ -1,27 +1,29 @@
-local Policy = require('apicast.policy')
-local _M = Policy.new('Find Service Policy')
-local configuration_store = require 'apicast.configuration_store'
-local mapping_rules_matcher = require 'apicast.mapping_rules_matcher'
+local Policy = require("apicast.policy")
+local _M = Policy.new("Find Service Policy")
+local configuration_store = require "apicast.configuration_store"
+local mapping_rules_matcher = require "apicast.mapping_rules_matcher"
 local new = _M.new
 
 local function find_service_strict(configuration, host)
   local found
   local services = configuration:find_by_host(host)
 
-  for s=1, #services do
+  for s = 1, #services do
     local service = services[s]
     local hosts = service.hosts or {}
 
-    for h=1, #hosts do
+    for h = 1, #hosts do
       if hosts[h] == host and service == configuration:find_by_id(service.id) then
         found = service
         break
       end
     end
-    if found then break end
+    if found then
+      break
+    end
   end
 
-  return found or ngx.log(ngx.WARN, 'service not found for host ', host)
+  return found or ngx.log(ngx.WARN, "service not found for host ", host)
 end
 
 local function find_service_cascade(configuration, host)
@@ -30,14 +32,14 @@ local function find_service_cascade(configuration, host)
   local method = ngx.req.get_method()
   local uri = ngx.var.uri
 
-  for s=1, #services do
+  for s = 1, #services do
     local service = services[s]
     local hosts = service.hosts or {}
 
-    for h=1, #hosts do
+    for h = 1, #hosts do
       if hosts[h] == host then
         local name = service.system_name or service.id
-        ngx.log(ngx.DEBUG, 'service ', name, ' matched host ', hosts[h])
+        ngx.log(ngx.DEBUG, "service ", name, " matched host ", hosts[h])
 
         local matches = mapping_rules_matcher.matches(method, uri, {}, service.rules)
         -- matches() also returns the index of the first rule that matched.
@@ -51,7 +53,9 @@ local function find_service_cascade(configuration, host)
         end
       end
     end
-    if found then break end
+    if found then
+      break
+    end
   end
 
   return found or find_service_strict(configuration, host)
@@ -61,7 +65,7 @@ function _M.new(...)
   local self = new(...)
 
   if configuration_store.path_routing then
-    ngx.log(ngx.WARN, 'apicast experimental path routing enabled')
+    ngx.log(ngx.WARN, "apicast experimental path routing enabled")
     self.find_service = find_service_cascade
   else
     self.find_service = find_service_strict

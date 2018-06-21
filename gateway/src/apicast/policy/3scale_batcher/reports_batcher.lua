@@ -1,16 +1,16 @@
-local keys_helper = require('apicast.policy.3scale_batcher.keys_helper')
+local keys_helper = require("apicast.policy.3scale_batcher.keys_helper")
 
 local setmetatable = setmetatable
 local ipairs = ipairs
 local insert = table.insert
-local resty_lock = require 'resty.lock'
+local resty_lock = require "resty.lock"
 
 local _M = {}
 
-local mt = { __index = _M }
+local mt = {__index = _M}
 
 local lock_timeout = 10
-local lock_options = { timeout = lock_timeout }
+local lock_options = {timeout = lock_timeout}
 
 -- Note: storage needs to implement shdict interface.
 function _M.new(storage, lock_shdict_name)
@@ -29,7 +29,7 @@ function _M:add(transaction)
 
   local lock, new_lock_err = resty_lock:new(self.lock_shdict_name, lock_options)
   if not lock then
-    ngx.log(ngx.ERR, 'failed to create lock: ', new_lock_err)
+    ngx.log(ngx.ERR, "failed to create lock: ", new_lock_err)
     return
   end
 
@@ -40,8 +40,7 @@ function _M:add(transaction)
   end
 
   for _, metric in ipairs(transaction.usage.metrics) do
-    local key = keys_helper.key_for_batched_report(
-      transaction.service_id, transaction.credentials, metric)
+    local key = keys_helper.key_for_batched_report(transaction.service_id, transaction.credentials, metric)
 
     -- There is not a 'safe_incr'. In order to avoid overriding batched
     -- reports, we call `safe_add` and call incr only when there was not an
@@ -50,21 +49,26 @@ function _M:add(transaction)
     local add_ok, add_err = self.storage:safe_add(key, deltas[metric])
 
     if not add_ok then
-      if add_err == 'no memory' then
-        ngx.log(ngx.ERR,
-          'Reports batching storage ran out of memory. ',
-          'Will lose a report of ', deltas[metric], ' to metric ', metric)
-      elseif add_err == 'exists' then
+      if add_err == "no memory" then
+        ngx.log(
+          ngx.ERR,
+          "Reports batching storage ran out of memory. ",
+          "Will lose a report of ",
+          deltas[metric],
+          " to metric ",
+          metric
+        )
+      elseif add_err == "exists" then
         self.storage:incr(key, deltas[metric])
       else
-        ngx.log(ngx.ERR, 'Error while batching report: ', add_err)
+        ngx.log(ngx.ERR, "Error while batching report: ", add_err)
       end
     end
   end
 
   local ok, unlock_err = lock:unlock()
   if not ok then
-    ngx.log(ngx.ERR, 'failed to unlock: ', unlock_err)
+    ngx.log(ngx.ERR, "failed to unlock: ", unlock_err)
     return
   end
 end
@@ -76,7 +80,7 @@ function _M:get_all(service_id)
 
   local lock, new_lock_err = resty_lock:new(self.lock_shdict_name, lock_options)
   if not lock then
-    ngx.log(ngx.ERR, 'failed to create lock: ', new_lock_err)
+    ngx.log(ngx.ERR, "failed to create lock: ", new_lock_err)
     return {}
   end
 
@@ -99,7 +103,7 @@ function _M:get_all(service_id)
 
   local ok, unlock_err = lock:unlock()
   if not ok then
-    ngx.log(ngx.ERR, 'failed to unlock: ', unlock_err)
+    ngx.log(ngx.ERR, "failed to unlock: ", unlock_err)
     return cached_reports
   end
 

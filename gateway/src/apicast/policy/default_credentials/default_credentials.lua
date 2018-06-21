@@ -2,8 +2,8 @@
 
 local tostring = tostring
 
-local policy = require('apicast.policy')
-local _M = policy.new('Default credentials policy')
+local policy = require("apicast.policy")
+local _M = policy.new("Default credentials policy")
 
 local new = _M.new
 
@@ -25,13 +25,15 @@ end
 
 local function creds_missing(service)
   local service_creds = service:extract_credentials()
-  if not service_creds then return true end
+  if not service_creds then
+    return true
+  end
 
   local backend_version = tostring(service.backend_version)
 
-  if backend_version == '1' then
+  if backend_version == "1" then
     return service_creds.user_key == nil
-  elseif backend_version == '2' then
+  elseif backend_version == "2" then
     return service_creds.app_id == nil and service_creds.app_key == nil
   end
 end
@@ -44,9 +46,9 @@ local function provide_creds_for_version_1(service, default_creds)
       user_key = default_creds.user_key
     }
 
-    ngx.log(ngx.DEBUG, 'Provided default creds for request')
+    ngx.log(ngx.DEBUG, "Provided default creds for request")
   else
-    ngx.log(ngx.WARN, 'No default user key configured')
+    ngx.log(ngx.WARN, "No default user key configured")
   end
 end
 
@@ -60,9 +62,9 @@ local function provide_creds_for_version_2(service, default_creds)
       app_key = default_creds.app_key
     }
 
-    ngx.log(ngx.DEBUG, 'Provided default creds for request')
+    ngx.log(ngx.DEBUG, "Provided default creds for request")
   else
-    ngx.log(ngx.WARN, 'No default app_id + app_key configured')
+    ngx.log(ngx.WARN, "No default app_id + app_key configured")
   end
 end
 
@@ -84,13 +86,13 @@ function _M:rewrite(context)
   local service = context.service
 
   if not service then
-    ngx.log(ngx.ERR, 'No service in the context')
+    ngx.log(ngx.ERR, "No service in the context")
     return
   end
 
   local backend_version = tostring(service.backend_version)
   if not backend_version_is_supported(backend_version) then
-    ngx.log(ngx.ERR, 'Incompatible backend version: ', backend_version)
+    ngx.log(ngx.ERR, "Incompatible backend version: ", backend_version)
     return
   end
 

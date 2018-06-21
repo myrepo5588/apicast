@@ -4,11 +4,11 @@
 local setmetatable = setmetatable
 local tonumber = tonumber
 
-local lrucache = require('resty.lrucache')
+local lrucache = require("resty.lrucache")
 
-local _M = { }
+local _M = {}
 
-local mt = { __index = _M }
+local mt = {__index = _M}
 
 local function ttl_from_introspection(introspection_info)
   local token_exp = introspection_info.exp

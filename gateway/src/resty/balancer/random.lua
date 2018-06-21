@@ -1,7 +1,7 @@
-local balancer = require 'resty.balancer'
+local balancer = require "resty.balancer"
 
 local _M = {
-  _VERSION = '0.1'
+  _VERSION = "0.1"
 }
 
 local random = math.random

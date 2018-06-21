@@ -1,1 +1,1 @@
-return require('load_configuration')
+return require("load_configuration")

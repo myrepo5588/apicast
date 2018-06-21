@@ -1,21 +1,21 @@
-local resty_env = require('resty.env')
+local resty_env = require("resty.env")
 
-local policy = require('apicast.policy')
-local Proxy = require('apicast.proxy')
-local LinkedList = require('apicast.linked_list')
-local _M = policy.new('Local Policy Chain')
+local policy = require("apicast.policy")
+local Proxy = require("apicast.proxy")
+local LinkedList = require("apicast.linked_list")
+local _M = policy.new("Local Policy Chain")
 
 local function build_default_chain()
   local module
 
-  if resty_env.value('APICAST_MODULE') then
+  if resty_env.value("APICAST_MODULE") then
     -- Needed to keep compatibility with the old module system.
-    module = assert(require('apicast.module'), 'could not load custom module')
+    module = assert(require("apicast.module"), "could not load custom module")
   else
-    module = 'apicast.policy.apicast'
+    module = "apicast.policy.apicast"
   end
 
-  return require('apicast.policy_chain').build({ module })
+  return require("apicast.policy_chain").build({module})
 end
 
 local default_chain = build_default_chain()

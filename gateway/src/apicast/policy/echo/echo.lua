@@ -3,8 +3,8 @@
 -- Also can interrupt the execution and skip the current phase or
 -- the whole processing of the request.
 
-local _M = require('apicast.policy').new('Echo Policy')
-local cjson = require('cjson')
+local _M = require("apicast.policy").new("Echo Policy")
+local cjson = require("cjson")
 
 local tonumber = tonumber
 local new = _M.new
@@ -23,8 +23,8 @@ end
 function _M.content()
   local accept = ngx.var.http_accept
 
-  if accept == 'application/json' then
-    ngx.say(cjson.encode({ request = ngx.var.request }))
+  if accept == "application/json" then
+    ngx.say(cjson.encode({request = ngx.var.request}))
   else
     ngx.say(ngx.var.request)
   end
@@ -35,9 +35,9 @@ function _M:rewrite()
     ngx.status = self.status
   end
 
-  if self.exit == 'request' then
+  if self.exit == "request" then
     return ngx.exit(ngx.status)
-  elseif self.exit == 'phase' then
+  elseif self.exit == "phase" then
     return ngx.exit(0)
   end
 end

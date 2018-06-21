@@ -1,1 +1,1 @@
-return require('soap')
+return require("soap")

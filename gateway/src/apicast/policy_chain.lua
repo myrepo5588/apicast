@@ -14,27 +14,26 @@ local require = require
 local insert = table.insert
 local sub = string.sub
 local format = string.format
-local noop = function() end
+local noop = function()
+end
 
-require('apicast.loader')
+require("apicast.loader")
 
-local linked_list = require('apicast.linked_list')
-local policy_phases = require('apicast.policy').phases
-local policy_loader = require('apicast.policy_loader')
+local linked_list = require("apicast.linked_list")
+local policy_phases = require("apicast.policy").phases
+local policy_loader = require("apicast.policy_loader")
 
-local _M = {
-
-}
+local _M = {}
 
 local mt = {
-    __index = _M,
-    __newindex = function(t, k ,v)
-        if t.frozen then
-            error("readonly table")
-        else
-            rawset(t, k, v)
-        end
+  __index = _M,
+  __newindex = function(t, k, v)
+    if t.frozen then
+      error("readonly table")
+    else
+      rawset(t, k, v)
     end
+  end
 }
 
 --- Build a policy chain
@@ -45,28 +44,27 @@ local mt = {
 --  the chain. If it's an object, it will added as is to the chain.
 -- @treturn PolicyChain New PolicyChain
 function _M.build(modules)
-    local chain = {}
-    local list = modules or { 'apicast.policy.apicast' }
+  local chain = {}
+  local list = modules or {"apicast.policy.apicast"}
 
-    for i=1, #list do
-        -- TODO: make this error better, possibly not crash and just log and skip the module
-        chain[i] = _M.load_policy(list[i]) or error(format('module %q could not be loaded', list[i]))
-    end
+  for i = 1, #list do
+    -- TODO: make this error better, possibly not crash and just log and skip the module
+    chain[i] = _M.load_policy(list[i]) or error(format("module %q could not be loaded", list[i]))
+  end
 
-    return _M.new(chain)
+  return _M.new(chain)
 end
 
-
 local DEFAULT_POLICIES = {
-    'apicast.policy.load_configuration',
-    'apicast.policy.find_service',
-    'apicast.policy.local_chain'
+  "apicast.policy.load_configuration",
+  "apicast.policy.find_service",
+  "apicast.policy.local_chain"
 }
 
 --- Return new policy chain with default policies.
 -- @treturn PolicyChain
 function _M.default()
-    return _M.build(DEFAULT_POLICIES)
+  return _M.build(DEFAULT_POLICIES)
 end
 
 --- Load a module
@@ -77,32 +75,32 @@ end
 -- @tparam ?table ... params needed to initialize the module
 -- @treturn object The module instantiated
 function _M.load_policy(module, version, ...)
-    if type(module) == 'string' then
-        if sub(module, 1, 14) == 'apicast.policy' then
-            module = sub(module, 16)
-            version = 'builtin'
-        end
-
-        local mod = policy_loader(module, version or 'builtin')
-
-        if mod then
-            return mod.new(...)
-        else
-            return mod
-        end
-    else
-        return module
+  if type(module) == "string" then
+    if sub(module, 1, 14) == "apicast.policy" then
+      module = sub(module, 16)
+      version = "builtin"
     end
+
+    local mod = policy_loader(module, version or "builtin")
+
+    if mod then
+      return mod.new(...)
+    else
+      return mod
+    end
+  else
+    return module
+  end
 end
 
 --- Initialize new @{PolicyChain}.
 -- @treturn PolicyChain
 function _M.new(list)
-    local chain = list or {}
+  local chain = list or {}
 
-    local self = setmetatable(chain, mt)
-    chain.config = self:export()
-    return self
+  local self = setmetatable(chain, mt)
+  chain.config = self:export()
+  return self
 end
 
 ---------------------
@@ -113,24 +111,26 @@ end
 -- @treturn linked_list The context of the chain. Note: the list returned is
 --   read-only.
 function _M:export()
-    local chain = self.config
+  local chain = self.config
 
-    if chain then return chain end
-
-    for i=#self, 1, -1 do
-        local export = self[i].export or noop
-        chain = linked_list.readonly(export(self[i]), chain)
-    end
-
+  if chain then
     return chain
+  end
+
+  for i = #self, 1, -1 do
+    local export = self[i].export or noop
+    chain = linked_list.readonly(export(self[i]), chain)
+  end
+
+  return chain
 end
 
 --- Freeze the policy chain to prevent modifications.
 -- After calling this method it won't be possible to insert more policies.
 -- @treturn PolicyChain returns self
 function _M:freeze()
-    self.frozen = true
-    return self
+  self.frozen = true
+  return self
 end
 
 --- Insert a policy into the chain
@@ -140,27 +140,27 @@ end
 -- @error frozen | returned when chain is not modifiable
 -- @see freeze
 function _M:insert(policy, position)
-    if self.frozen then
-        return nil, 'frozen'
-    else
-        insert(self, position or #self+1, policy)
-        return #self
-    end
+  if self.frozen then
+    return nil, "frozen"
+  else
+    insert(self, position or #self + 1, policy)
+    return #self
+  end
 end
 
 local function call_chain(phase_name)
-    return function(self, ...)
-        for i=1, #self do
-            ngx.log(ngx.DEBUG, 'policy chain execute phase: ', phase_name, ', policy: ', self[i]._NAME, ', i: ', i)
-            self[i][phase_name](self[i], ...)
-        end
-
-        return ipairs(self)
+  return function(self, ...)
+    for i = 1, #self do
+      ngx.log(ngx.DEBUG, "policy chain execute phase: ", phase_name, ", policy: ", self[i]._NAME, ", i: ", i)
+      self[i][phase_name](self[i], ...)
     end
+
+    return ipairs(self)
+  end
 end
 
-for _,phase in policy_phases() do
-    _M[phase] = call_chain(phase)
+for _, phase in policy_phases() do
+  _M[phase] = call_chain(phase)
 end
 
 return _M.build():freeze()

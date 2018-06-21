@@ -1,5 +1,5 @@
 local resty_lrucache = require "resty.lrucache"
-local inspect = require 'inspect'
+local inspect = require "inspect"
 
 local setmetatable = setmetatable
 local pairs = pairs
@@ -9,10 +9,10 @@ local concat = table.concat
 local ngx_now = ngx.now
 
 local _M = {
-  _VERSION = '0.1'
+  _VERSION = "0.1"
 }
 
-local mt = { __index = _M }
+local mt = {__index = _M}
 
 local shared_lrucache = resty_lrucache.new(1000)
 
@@ -21,16 +21,19 @@ function _M.shared()
 end
 
 function _M.new(cache)
-  return setmetatable({
-    cache = cache or resty_lrucache.new(100)
-  }, mt)
+  return setmetatable(
+    {
+      cache = cache or resty_lrucache.new(100)
+    },
+    mt
+  )
 end
 
 local function compact_answers(servers)
   local hash = {}
   local compact = {}
 
-  for i=1, #servers do
+  for i = 1, #servers do
     local server = servers[i]
 
     if server then
@@ -61,17 +64,17 @@ function _M.store(self, answer, force_ttl)
   local cache = self.cache
 
   if not cache then
-    return nil, 'not initialized'
+    return nil, "not initialized"
   end
 
   local name = answer.name
 
   if not name then
-    ngx.log(ngx.WARN, 'resolver cache write refused invalid answer ', inspect(answer))
-    return nil, 'invalid answer'
+    ngx.log(ngx.WARN, "resolver cache write refused invalid answer ", inspect(answer))
+    return nil, "invalid answer"
   end
 
-  ngx.log(ngx.DEBUG, 'resolver cache write ', name, ' with TLL ', answer.ttl)
+  ngx.log(ngx.DEBUG, "resolver cache write ", name, " with TLL ", answer.ttl)
 
   local ttl = force_ttl or answer.ttl
 
@@ -81,7 +84,6 @@ function _M.store(self, answer, force_ttl)
 
   return cache:set(name, answer, ttl)
 end
-
 
 function _M.save(self, answers)
   local ans = compact_answers(answers or {})
@@ -99,11 +101,11 @@ end
 
 local function fetch_answers(hostname, cache, stale, circular_reference)
   if not hostname then
-    return {}, 'missing name'
+    return {}, "missing name"
   end
 
   if circular_reference[hostname] then
-    error('circular reference detected when querying '.. hostname)
+    error("circular reference detected when querying " .. hostname)
     return
   else
     circular_reference[hostname] = true
@@ -112,14 +114,14 @@ local function fetch_answers(hostname, cache, stale, circular_reference)
   local answer, stale_answer = cache:get(hostname)
 
   if answer then
-    ngx.log(ngx.DEBUG, 'resolver cache read ', hostname, ' ', #answer, ' entries')
+    ngx.log(ngx.DEBUG, "resolver cache read ", hostname, " ", #answer, " entries")
   else
     if stale and stale_answer then
       cache:set(hostname, stale_answer, 0)
-      ngx.log(ngx.DEBUG, 'resolver cache stale ', hostname, ' ', #stale_answer, 'entries')
+      ngx.log(ngx.DEBUG, "resolver cache stale ", hostname, " ", #stale_answer, "entries")
       answer = stale_answer
     else
-      ngx.log(ngx.DEBUG, 'resolver cache miss ', hostname)
+      ngx.log(ngx.DEBUG, "resolver cache miss ", hostname)
       answer = {}
     end
   end
@@ -131,7 +133,7 @@ local function yieldfetch(found, hostname, cache, stale, circular_reference)
   local answers = fetch_answers(hostname, cache, stale, circular_reference)
   local ret = found or {}
 
-  for i=1, #answers do
+  for i = 1, #answers do
     yieldfetch(ret, answers[i].cname, cache, stale, circular_reference)
     insert(ret, answers[i])
   end
@@ -147,7 +149,7 @@ end
 
 local answers_mt = {
   __tostring = function(t)
-    return concat(t.addresses, ', ')
+    return concat(t.addresses, ", ")
   end
 }
 
@@ -155,15 +157,15 @@ function _M.all(self)
   local cache = self.cache
 
   if not cache then
-    return nil, 'not initialized'
+    return nil, "not initialized"
   end
 
   local results = {}
   local now = ngx_now()
 
-  for k,v in pairs(cache.hasht) do
+  for k, v in pairs(cache.hasht) do
     local node = cache.key2node[k]
-    results[k] = { value = v, expires_in = node.expire - now }
+    results[k] = {value = v, expires_in = node.expire - now}
   end
 
   return results
@@ -173,21 +175,21 @@ function _M.get(self, name, stale)
   local cache = self.cache
 
   if not cache then
-    return nil, 'not initialized'
+    return nil, "not initialized"
   end
 
-  local answers = setmetatable({ addresses = {} }, answers_mt)
+  local answers = setmetatable({addresses = {}}, answers_mt)
   local records = fetch(cache, name, stale)
 
-  for i=1, #records do
+  for i = 1, #records do
     insert(answers, records[i])
     insert(answers.addresses, records[i].address)
   end
 
   if #records == 0 then
-    ngx.log(ngx.DEBUG, 'resolver cache miss: ', name)
+    ngx.log(ngx.DEBUG, "resolver cache miss: ", name)
   else
-    ngx.log(ngx.DEBUG, 'resolver cache hit: ', name, ' ', answers)
+    ngx.log(ngx.DEBUG, "resolver cache hit: ", name, " ", answers)
   end
 
   return answers

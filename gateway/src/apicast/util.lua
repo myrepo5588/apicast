@@ -1,5 +1,5 @@
 local _M = {
-  VERSION = '0.0.1'
+  VERSION = "0.0.1"
 }
 
 local ngx_now = ngx.now
@@ -13,10 +13,10 @@ local unpack = unpack
 
 function _M.timer(name, fun, ...)
   local start = ngx_now()
-  ngx.log(ngx.INFO, 'benchmark start ' .. name .. ' at ' .. start)
-  local ret = { fun(...) }
+  ngx.log(ngx.INFO, "benchmark start " .. name .. " at " .. start)
+  local ret = {fun(...)}
   local time = ngx_now() - start
-  ngx.log(ngx.INFO, 'benchmark ' .. name .. ' took ' .. time)
+  ngx.log(ngx.INFO, "benchmark " .. name .. " took " .. time)
   return unpack(ret)
 end
 
@@ -37,9 +37,9 @@ end
 function _M.system(command)
   local tmpout = tmpname()
   local tmperr = tmpname()
-  ngx.log(ngx.DEBUG, 'os execute ', command)
+  ngx.log(ngx.DEBUG, "os execute ", command)
 
-  local success, exit, code = execute('(' .. command .. ')' .. ' > ' .. tmpout .. ' 2> ' .. tmperr)
+  local success, exit, code = execute("(" .. command .. ")" .. " > " .. tmpout .. " 2> " .. tmperr)
   local err
 
   tmpout, err = read(tmpout)
@@ -58,7 +58,7 @@ function _M.system(command)
   -- even though the documentation says otherwise (true/false)
   if success == 0 or success == true then
     if len(tmperr) > 0 then
-      ngx.log(ngx.WARN, 'os execute stderr: \n', tmperr)
+      ngx.log(ngx.WARN, "os execute stderr: \n", tmperr)
     end
 
     return tmpout

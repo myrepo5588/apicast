@@ -13,17 +13,17 @@
 local ipairs = ipairs
 local insert = table.insert
 
-local MappingRule = require('apicast.mapping_rule')
-local Usage = require('apicast.usage')
-local mapping_rules_matcher = require('apicast.mapping_rules_matcher')
-local MimeType = require('resty.mime')
+local MappingRule = require("apicast.mapping_rule")
+local Usage = require("apicast.usage")
+local mapping_rules_matcher = require("apicast.mapping_rules_matcher")
+local MimeType = require("resty.mime")
 
-local policy = require('apicast.policy')
+local policy = require("apicast.policy")
 
-local _M = policy.new('SOAP policy')
+local _M = policy.new("SOAP policy")
 
-local soap_action_header = 'SOAPAction'
-local soap_action_ctype = 'application/soap+xml'
+local soap_action_header = "SOAPAction"
+local soap_action_ctype = "application/soap+xml"
 
 local new = _M.new
 
@@ -33,15 +33,14 @@ local function soap_action_in_header(headers)
   return headers[soap_action_header]
 end
 
-
 -- Extracts a SOAP action from the Content-Type header. In SOAP, the
 -- type/subtype is application/soap+xml, and the action is specified as a
 -- param in that header. When there is no SOAP action, this method returns nil.
 local function soap_action_in_ctype(headers)
-  local mime_type = MimeType.new(headers['Content-Type'])
+  local mime_type = MimeType.new(headers["Content-Type"])
 
   if mime_type.media_type == soap_action_ctype then
-    return mime_type:parameter('action')
+    return mime_type:parameter("action")
   else
     return nil
   end
@@ -56,12 +55,13 @@ local function extract_soap_uri()
 end
 
 local function usage_from_matching_rules(soap_action_uri, rules)
-  return mapping_rules_matcher.get_usage_from_matches(
-    nil, soap_action_uri, {}, rules)
+  return mapping_rules_matcher.get_usage_from_matches(nil, soap_action_uri, {}, rules)
 end
 
 local function mapping_rules_from_config(config)
-  if not (config and config.mapping_rules) then return {} end
+  if not (config and config.mapping_rules) then
+    return {}
+  end
 
   local res = {}
 
@@ -91,8 +91,7 @@ function _M:rewrite(context)
   local soap_action_uri = extract_soap_uri()
 
   if soap_action_uri then
-    local soap_usage = usage_from_matching_rules(
-      soap_action_uri, self.mapping_rules)
+    local soap_usage = usage_from_matching_rules(soap_action_uri, self.mapping_rules)
 
     context.usage = context.usage or Usage.new()
     context.usage:merge(soap_usage)

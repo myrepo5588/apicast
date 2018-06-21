@@ -1,1 +1,1 @@
-return require('rate_limit')
+return require("rate_limit")

@@ -2,19 +2,18 @@ local format = string.format
 local lower = string.lower
 local setmetatable = setmetatable
 
-local re = require('ngx.re')
+local re = require("ngx.re")
 local re_match = ngx.re.match
 local re_split = re.split
 
 local _M = {}
-local MimeType_mt = { __index = _M }
-
+local MimeType_mt = {__index = _M}
 
 function _M.new(media_type)
   -- The [RFC[(https://tools.ietf.org/html/rfc7231#section-3.1.1.1) defines
 
   -- that space around `;` is irrelevant, so remove it when splitting
-  local match = re_split(media_type, [[\s*;\s*]], 'oj', nil, 2)
+  local match = re_split(media_type, [[\s*;\s*]], "oj", nil, 2)
 
   local self = {}
 
@@ -34,9 +33,11 @@ local parameter_pattern = [[%s=(?:"(.+?)"|([^\s;"]+))\s*(?:;|$)]]
 function _M:parameter(name)
   local parameters = self.parameters
 
-  local matches = re_match(parameters, format(parameter_pattern, name), 'oji')
+  local matches = re_match(parameters, format(parameter_pattern, name), "oji")
 
-  if not matches then return nil end
+  if not matches then
+    return nil
+  end
 
   return matches[1] or matches[2]
 end

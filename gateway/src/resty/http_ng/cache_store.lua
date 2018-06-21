@@ -1,6 +1,6 @@
-local lrucache = require 'resty.lrucache'
-local ngx_re = require 'ngx.re'
-local http_headers = require 'resty.http_ng.headers'
+local lrucache = require "resty.lrucache"
+local ngx_re = require "ngx.re"
+local http_headers = require "resty.http_ng.headers"
 
 local setmetatable = setmetatable
 local gsub = string.gsub
@@ -11,12 +11,12 @@ local max = math.max
 local pairs = pairs
 local floor = math.floor
 
-local _M = { default_size = 100 }
+local _M = {default_size = 100}
 
-local mt = { __index = _M }
+local mt = {__index = _M}
 
 function _M.new(store)
-  return setmetatable({ cache = store or lrucache.new(_M.default_size) }, mt)
+  return setmetatable({cache = store or lrucache.new(_M.default_size)}, mt)
 end
 
 local function TODO(ret)
@@ -28,26 +28,28 @@ local function request_cache_key(request)
   -- FIXME: missing headers, ...
   -- Match Effective Request URI: https://tools.ietf.org/html/rfc7230#section-5.5
   -- Calculate Secondary Key wtih Vary: https://tools.ietf.org/html/rfc7234#section-4.1
-  return format('%s:%s', request.method, request.url)
+  return format("%s:%s", request.method, request.url)
 end
 
 local function parse_cache_control(value)
-  if not value then return end
+  if not value then
+    return
+  end
 
-  local res, err = ngx_re.split(value, '\\s*,\\s*', 'oj')
+  local res, err = ngx_re.split(value, "\\s*,\\s*", "oj")
 
   local cache_control = {}
 
   local t = {}
 
-  for i=1, #res do
-    local r, e = ngx_re.split(res[i], '=', 'oj', nil, 2, t)
+  for i = 1, #res do
+    local r, e = ngx_re.split(res[i], "=", "oj", nil, 2, t)
 
     if e then
       ngx.log(ngx.WARN, e)
     else
       -- TODO: selectively handle quoted strings per the RFC: https://tools.ietf.org/html/rfc7234#section-5.2
-      cache_control[gsub(lower(r[1]), '-', '_')] = tonumber(r[2]) or r[2] or true
+      cache_control[gsub(lower(r[1]), "-", "_")] = tonumber(r[2]) or r[2] or true
     end
   end
 
@@ -86,7 +88,7 @@ end
 -- https://tools.ietf.org/html/rfc7234#section-4.2.1
 local function freshness_lifetime(response)
   local cache_control = parse_cache_control(response.headers.cache_control) or empty_t
-  local expires = ngx.parse_http_time(response.headers.expires or '')
+  local expires = ngx.parse_http_time(response.headers.expires or "")
   local date = ngx.parse_http_time(response.headers.date)
 
   --  A cache can calculate the freshness lifetime (denoted as freshness_lifetime)
@@ -94,18 +96,15 @@ local function freshness_lifetime(response)
   return tonumber(
     --  If the cache is shared and the s-maxage response directive
     -- (Section 5.2.2.9) is present, use its value,
-    (_M.shared and cache_control.s_maxage)
-        or
-    --  If the max-age response directive (Section 5.2.2.8) is present, use its value,
-    cache_control.max_age
-      or
-    --  If the Expires response header field (Section 5.3) is present, use
-    --  its value minus the value of the Date response header field,
-    (expires and expires - date)
-      or
-    --  Otherwise, no explicit expiration time is present in the response.
-    --  A heuristic freshness lifetime might be applicable; see Section 4.2.2.
-    0 -- TODO: implement Heuristic Freshness https://tools.ietf.org/html/rfc7234#section-4.2.2
+    (_M.shared and cache_control.s_maxage) or
+      --  If the max-age response directive (Section 5.2.2.8) is present, use its value,
+      cache_control.max_age or
+      --  If the Expires response header field (Section 5.3) is present, use
+      --  its value minus the value of the Date response header field,
+      (expires and expires - date) or
+      --  Otherwise, no explicit expiration time is present in the response.
+      --  A heuristic freshness lifetime might be applicable; see Section 4.2.2.
+      0 -- TODO: implement Heuristic Freshness https://tools.ietf.org/html/rfc7234#section-4.2.2
   )
 end
 
@@ -165,7 +164,9 @@ local function current_age(response)
 end
 
 local function fresh_response(response)
-  if not response then return nil, 'no response' end
+  if not response then
+    return nil, "no response"
+  end
 
   local age = current_age(response)
   local response_is_fresh = (freshness_lifetime(response) > age)
@@ -174,11 +175,14 @@ local function fresh_response(response)
     response.headers.age = floor(age)
   end
 
-  return response_is_fresh-- TODO: implement freshness https://tools.ietf.org/html/rfc7234#section-4.2
+  return response_is_fresh
+  -- TODO: implement freshness https://tools.ietf.org/html/rfc7234#section-4.2
 end
 
 local function stale_response(response)
-  if not response then return nil, 'no response' end
+  if not response then
+    return nil, "no response"
+  end
 
   -- TODO: implement https://tools.ietf.org/html/rfc7234#section-4.2.4
   local cache_control = parse_cache_control(response.headers.cache_control) or empty_t
@@ -200,34 +204,36 @@ end
 function _M:get(request)
   local cache = self.cache
   if not cache then
-    return nil, 'not initialized'
+    return nil, "not initialized"
   end
 
   -- TODO: verify it is valid request per the RFC: https://tools.ietf.org/html/rfc7234#section-3
 
   request.headers = request.headers or http_headers.new()
   request.headers.via = (request.headers.via or {})
-  request.headers.via['1.1 APIcast'] = true
+  request.headers.via["1.1 APIcast"] = true
 
   if not reuse_stored_response(request) then
-    return nil, 'not reusing stored response'
+    return nil, "not reusing stored response"
   end
 
   local cache_key = request_cache_key(request)
 
-  if not cache_key then return nil, 'missing cache key' end
+  if not cache_key then
+    return nil, "missing cache key"
+  end
 
   local res = cache:get(cache_key)
 
   if fresh_response(res) then
-    res.headers.x_cache_status = 'HIT'
+    res.headers.x_cache_status = "HIT"
     return res
   elseif res then
-    res.headers.x_cache_status = 'EXPIRED'
+    res.headers.x_cache_status = "EXPIRED"
   end
 
   if stale_response(res) then
-    res.headers.x_cache_status = 'STALE'
+    res.headers.x_cache_status = "STALE"
 
     if serve_stale_response(res) then
       -- TODO: generate Warning header per the RFC: https://tools.ietf.org/html/rfc7234#section-4.2.4
@@ -236,7 +242,7 @@ function _M:get(request)
   end
 
   if res then
-    return res, 'must-revalidate'
+    return res, "must-revalidate"
   end
 
   return res
@@ -270,43 +276,28 @@ local function cacheable_response(response)
   local response_cache_control = parse_cache_control(response.headers.cache_control) or empty_t
 
   --  A cache MUST NOT store a response to any request, unless:
-  return (
-    --  The request method is understood by the cache and defined as being cacheable
-    allowed_methods[request.method]
-      and
-    --  the response status code is understood by the cache
-    allowed_status_codes[response.status]
-      and
+  return --  The request method is understood by the cache and defined as being cacheable
+  (allowed_methods[request.method] and --  the response status code is understood by the cache
+    allowed_status_codes[response.status] and
     --  the "no-store" cache directive (see Section 5.2) does not appear in request or response header fields
-    not (request_cache_control.no_store or response_cache_control.no_store)
-      and
+    not (request_cache_control.no_store or response_cache_control.no_store) and
     --  the "private" response directive (see Section 5.2.2.6) does not appear in the response, if the cache is shared
-    not (_M.shared and response_cache_control.private)
-      and
+    not (_M.shared and response_cache_control.private) and
     --  the Authorization header field (see Section 4.2 of [RFC7235]) does
     --  not appear in the request, if the cache is shared, unless the
     --  response explicitly allows it (see Section 3.2)
-    not (_M.shared and request.headers.authorization)
-      and ( -- the response either:
-      --  contains an Expires header field (see Section 5.3)
-      response.headers.expires
-        or
-      -- contains a max-age response directive (see Section 5.2.2.8)
-      response_cache_control.max_age
-        or
+    not (_M.shared and request.headers.authorization) and -- the response either:
+    --  contains an Expires header field (see Section 5.3)
+    (response.headers.expires or -- contains a max-age response directive (see Section 5.2.2.8)
+      response_cache_control.max_age or
       -- contains a s-maxage response directive (see Section 5.2.2.9) and the cache is shared
-      (response_cache_control.s_maxage and _M.shared)
-        or
+      (response_cache_control.s_maxage and _M.shared) or
       --  contains a Cache Control Extension (see Section 5.2.3) allows it to be cached
-      TODO(false) -- TODO: https://tools.ietf.org/html/rfc7234#section-5.2.3
-        or
+      TODO(false) or -- TODO: https://tools.ietf.org/html/rfc7234#section-5.2.3
       --  has a status code that is defined as cacheable by default (see Section 4.2.2)
-      TODO(false) -- TODO: https://tools.ietf.org/html/rfc7234#section-4.2.2
-        or
+      TODO(false) or -- TODO: https://tools.ietf.org/html/rfc7234#section-4.2.2
       --  contains a public response directive (see Section 5.2.2.5).
-      TODO(false) -- TODO: https://tools.ietf.org/html/rfc7234#section-5.2.2.5
-    )
-  )
+      TODO(false))) -- TODO: https://tools.ietf.org/html/rfc7234#section-5.2.2.5
 end
 
 function _M.entry(response)
@@ -330,14 +321,13 @@ local function send(backend, request)
   return res, err
 end
 
-
 function _M:send(backend, request)
   local response, error = self:get(request)
 
   if response and error then
     response, error = self:revalidate(response, backend, request)
   elseif error then
-    ngx.log(ngx.WARN, 'http cache store: ', error) -- FIXME: for debuging
+    ngx.log(ngx.WARN, "http cache store: ", error) -- FIXME: for debuging
   end
 
   if not response then
@@ -347,7 +337,7 @@ function _M:send(backend, request)
       local ok, err = self:set(response)
 
       if not ok and err then
-        ngx.log(ngx.WARN, 'http cache store: ', err) -- FIXME: for debugging we need more info
+        ngx.log(ngx.WARN, "http cache store: ", err) -- FIXME: for debugging we need more info
       end
     end
   end
@@ -388,8 +378,10 @@ local function freshen_stored_response(stored, response)
   --  response also lacks a validator, then that stored response is
   --  selected for update.
 
-  if (not response_etag and not response.headers.last_modified) and
-     (not stored_etag and not stored.headers.last_modified) then
+  if
+    (not response_etag and not response.headers.last_modified) and
+      (not stored_etag and not stored.headers.last_modified)
+   then
     update = stored
   end
 
@@ -412,7 +404,7 @@ local function freshen_stored_response(stored, response)
         update.headers[name] = value
       end
     end
-    update.headers.x_cache_status = 'REVALIDATED'
+    update.headers.x_cache_status = "REVALIDATED"
   end
 
   -- FIXME: set the X-Cache-Status to something other than UPDATING (from the revalidate
@@ -424,7 +416,7 @@ function _M:revalidate(response, backend, request)
   local etag = response.headers.etag
   local last_modified = response.headers.last_modified
 
-  response.headers.x_cache_status = 'UPDATING'
+  response.headers.x_cache_status = "UPDATING"
 
   -- One such validator is the timestamp given in a Last-Modified header
   -- field (Section 2.2 of [RFC7232]), which can be used in an
@@ -450,20 +442,18 @@ function _M:revalidate(response, backend, request)
   --  A 304 (Not Modified) response status code indicates that the
   --  stored response can be updated and reused; see Section 4.3.4.
   if res and res.status == 304 then
+    --  However, if a cache receives a 5xx (Server Error) response while
+    --  attempting to validate a response, it can either forward this
+    --  response to the requesting client, or act as if the server failed
+    --  to respond.  In the latter case, the cache MAY send a previously
+    --  stored response (see Section 4.2.4).
     return freshen_stored_response(response, res)
-
-  --  However, if a cache receives a 5xx (Server Error) response while
-  --  attempting to validate a response, it can either forward this
-  --  response to the requesting client, or act as if the server failed
-  --  to respond.  In the latter case, the cache MAY send a previously
-  --  stored response (see Section 4.2.4).
   elseif res.status >= 500 and res.status < 600 then
+    --  A full response (i.e., one with a payload body) indicates that
+    --  none of the stored responses nominated in the conditional request
+    --  is suitable.  Instead, the cache MUST use the full response to
+    --  satisfy the request and MAY replace the stored response(s).
     return response -- returns cached response
-
-  --  A full response (i.e., one with a payload body) indicates that
-  --  none of the stored responses nominated in the conditional request
-  --  is suitable.  Instead, the cache MUST use the full response to
-  --  satisfy the request and MAY replace the stored response(s).
   elseif res then
     self:set(res)
     return res
@@ -476,18 +466,20 @@ function _M:set(response)
   local cache = self.cache
 
   if not cache then
-    return nil, 'not initialized'
+    return nil, "not initialized"
   end
 
-  response.headers.x_cache_status = 'MISS'
+  response.headers.x_cache_status = "MISS"
 
   if not cacheable_response(response) then
-    return nil, 'not cacheable response'
+    return nil, "not cacheable response"
   end
 
   local cache_key = response_cache_key(response)
 
-  if not cache_key then return nil, 'invalid cache key' end
+  if not cache_key then
+    return nil, "invalid cache key"
+  end
 
   local ttl = response_ttl(response)
 
@@ -499,6 +491,5 @@ function _M:set(response)
     return res
   end
 end
-
 
 return _M

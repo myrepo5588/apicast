@@ -1,19 +1,25 @@
-local configuration = require 'apicast.configuration'
-local cjson = require 'cjson'
+local configuration = require "apicast.configuration"
+local cjson = require "cjson"
 
 local type = type
 local pcall = pcall
 local len = string.len
 
-local _M = {
-
-}
+local _M = {}
 
 function _M.decode(contents, encoder)
-  if not contents then return nil end
-  if type(contents) == 'string' and len(contents) == 0 then return nil end
-  if type(contents) == 'table' then return contents end
-  if contents == '\n' then return nil end
+  if not contents then
+    return nil
+  end
+  if type(contents) == "string" and len(contents) == 0 then
+    return nil
+  end
+  if type(contents) == "table" then
+    return contents
+  end
+  if contents == "\n" then
+    return nil
+  end
 
   encoder = encoder or cjson
 
