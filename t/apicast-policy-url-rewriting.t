@@ -26,7 +26,7 @@ __DATA__
           { "pattern": "/", "http_method": "GET", "metric_system_name": "hits", "delta": 2 }
         ],
         "policy_chain": [
-          { "name": "apicast.policy.apicast" },
+          { "name": "apicast.policy.3scale" },
           {
             "name": "apicast.policy.url_rewriting",
             "configuration": {
@@ -76,7 +76,7 @@ yay, api backend
           { "pattern": "/", "http_method": "GET", "metric_system_name": "hits", "delta": 2 }
         ],
         "policy_chain": [
-          { "name": "apicast.policy.apicast" },
+          { "name": "apicast.policy.3scale" },
           {
             "name": "apicast.policy.url_rewriting",
             "configuration": {
@@ -127,7 +127,7 @@ Substitutions are applied in the order specified.
           { "pattern": "/", "http_method": "GET", "metric_system_name": "hits", "delta": 2 }
         ],
         "policy_chain": [
-          { "name": "apicast.policy.apicast" },
+          { "name": "apicast.policy.3scale" },
           {
             "name": "apicast.policy.url_rewriting",
             "configuration": {
@@ -182,7 +182,7 @@ We need to test 2 things:
           { "pattern": "/", "http_method": "GET", "metric_system_name": "hits", "delta": 2 }
         ],
         "policy_chain": [
-          { "name": "apicast.policy.apicast" },
+          { "name": "apicast.policy.3scale" },
           {
             "name": "apicast.policy.url_rewriting",
             "configuration": {
@@ -246,7 +246,7 @@ rules.
               ]
             }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }
@@ -299,7 +299,7 @@ When it exists, it adds a new value for it.
               ]
             }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }
@@ -355,7 +355,7 @@ When the argument does not exist, the operation creates it.
               ]
             }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }
@@ -411,7 +411,7 @@ already.
               ]
             }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }
@@ -464,7 +464,7 @@ yay, api backend
               ]
             }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }
@@ -539,7 +539,7 @@ yay, api backend
                   }
                },
                {
-                  "name":"apicast.policy.apicast"
+                  "name":"apicast.policy.3scale"
                }
             ]
          }
@@ -603,7 +603,7 @@ receives the correct values.
               "rules": [ { "regex": "/", "url": "http://test:$TEST_NGINX_SERVER_PORT" } ]
             }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }

@@ -34,7 +34,7 @@ describe('executor', function()
     local policy
 
     before_each(function()
-      local chain = PolicyChain.build({'apicast.policy.apicast'})
+      local chain = PolicyChain.build({'apicast.policy.3scale'})
       policy = getmetatable(chain[1]).__index
       executor = Executor.new(chain)
     end)

@@ -34,7 +34,7 @@ init_by_lua_block {
           },
           policy_chain = {
             { name = 'apicast.policy.3scale_batcher', configuration = {} },
-            { name = 'apicast.policy.apicast' }
+            { name = 'apicast.policy.3scale' }
           }
         }
       }
@@ -95,7 +95,7 @@ init_by_lua_block {
           },
           policy_chain = {
             { name = 'apicast.policy.3scale_batcher', configuration = {} },
-            { name = 'apicast.policy.apicast' }
+            { name = 'apicast.policy.3scale' }
           }
         }
       }
@@ -167,7 +167,7 @@ init_by_lua_block {
               name = 'apicast.policy.3scale_batcher',
               configuration = { batch_report_seconds = 1 }
             },
-            { name = 'apicast.policy.apicast' }
+            { name = 'apicast.policy.3scale' }
           }
         }
       },
@@ -188,7 +188,7 @@ init_by_lua_block {
               name = 'apicast.policy.3scale_batcher',
               configuration = { batch_report_seconds = 1 }
             },
-            { name = 'apicast.policy.apicast' }
+            { name = 'apicast.policy.3scale' }
           }
         }
       }
@@ -362,7 +362,7 @@ init_by_lua_block {
               configuration = { }
             },
             {
-              name = 'apicast.policy.apicast'
+              name = 'apicast.policy.3scale'
             },
             {
               name = 'apicast.policy.caching',

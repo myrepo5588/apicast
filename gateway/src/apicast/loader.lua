@@ -14,7 +14,7 @@ local package = package
 local policy_loader = require 'apicast.policy_loader'
 
 local map = {
-  ['apicast'] = 'apicast.policy.apicast'
+  ['apicast'] = 'apicast.policy.3scale',
 }
 
 local _M = { }

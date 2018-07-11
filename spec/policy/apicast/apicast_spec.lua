@@ -1,4 +1,4 @@
-local _M = require 'apicast.policy.apicast'
+local _M = require 'apicast.policy.3scale'
 
 describe('APIcast policy', function()
 

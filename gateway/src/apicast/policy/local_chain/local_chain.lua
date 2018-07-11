@@ -12,7 +12,7 @@ local function build_default_chain()
     -- Needed to keep compatibility with the old module system.
     module = assert(require('apicast.module'), 'could not load custom module')
   else
-    module = 'apicast.policy.apicast'
+    module = 'apicast.policy.3scale'
   end
 
   return require('apicast.policy_chain').build({ module })

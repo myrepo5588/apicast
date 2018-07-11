@@ -24,7 +24,7 @@ __DATA__
             }
           },
           {
-            "name": "apicast.policy.apicast"
+            "name": "apicast.policy.3scale"
           }
         ],
         "api_backend": "http://test:$TEST_NGINX_SERVER_PORT/",
@@ -74,7 +74,7 @@ yay, api backend
             }
           },
           {
-            "name": "apicast.policy.apicast"
+            "name": "apicast.policy.3scale"
           }
         ],
         "api_backend": "http://test:$TEST_NGINX_SERVER_PORT/",
@@ -123,7 +123,7 @@ yay, api backend
             }
           },
           {
-            "name": "apicast.policy.apicast"
+            "name": "apicast.policy.3scale"
           }
         ],
         "api_backend": "http://test:$TEST_NGINX_SERVER_PORT/",
@@ -173,7 +173,7 @@ yay, api backend
             }
           },
           {
-            "name": "apicast.policy.apicast"
+            "name": "apicast.policy.3scale"
           }
         ],
         "api_backend": "http://test:$TEST_NGINX_SERVER_PORT/",

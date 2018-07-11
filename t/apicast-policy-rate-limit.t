@@ -1038,7 +1038,7 @@ so only the third call returns 429.
                   limits_exceeded_error = { status_code = 429 }
                 }
               },
-              { name = "apicast.policy.apicast" }
+              { name = "apicast.policy.3scale" }
             }
           }
         }

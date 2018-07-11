@@ -20,7 +20,7 @@ __DATA__
           { "pattern": "/", "http_method": "GET", "metric_system_name": "hits", "delta": 2 }
         ],
         "policy_chain": [
-          { "name": "apicast.policy.apicast" },
+          { "name": "apicast.policy.3scale" },
           {
             "name": "apicast.policy.3scale_referrer",
             "configuration": {}
@@ -78,7 +78,7 @@ yay, api backend
             "name": "apicast.policy.3scale_referrer",
             "configuration": {}
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }
@@ -130,7 +130,7 @@ header is not sent, the rest of the parameters are correctly sent to backend.
           { "pattern": "/", "http_method": "GET", "metric_system_name": "hits", "delta": 2 }
         ],
         "policy_chain": [
-          { "name": "apicast.policy.apicast" },
+          { "name": "apicast.policy.3scale" },
           {
             "name": "apicast.policy.3scale_referrer",
             "configuration": {}
@@ -185,7 +185,7 @@ the 3scale backend is enabled (APICAST_REPORTING_THREADS > 0)
           { "pattern": "/", "http_method": "GET", "metric_system_name": "hits", "delta": 2 }
         ],
         "policy_chain": [
-          { "name": "apicast.policy.apicast" },
+          { "name": "apicast.policy.3scale" },
           {
             "name": "apicast.policy.3scale_referrer",
             "configuration": {}

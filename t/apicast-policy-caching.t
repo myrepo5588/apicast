@@ -30,7 +30,7 @@ In order to test this, we configure our backend so the first request returns
             "configuration": { "caching_type": "resilient" }
           },
           {
-            "name": "apicast.policy.apicast"
+            "name": "apicast.policy.3scale"
           }
         ],
         "api_backend": "http://test:$TEST_NGINX_SERVER_PORT/",
@@ -87,7 +87,7 @@ because the cache was cleared in the second call.
             "configuration": { "caching_type": "strict" }
           },
           {
-            "name": "apicast.policy.apicast"
+            "name": "apicast.policy.3scale"
           }
         ],
         "api_backend": "http://test:$TEST_NGINX_SERVER_PORT/",
@@ -143,7 +143,7 @@ auth error in the odd ones.
             "configuration": { "caching_type": "none" }
           },
           {
-            "name": "apicast.policy.apicast"
+            "name": "apicast.policy.3scale"
           }
         ],
         "api_backend": "http://test:$TEST_NGINX_SERVER_PORT/",
@@ -197,7 +197,7 @@ in the cache.
             "configuration": { "caching_type": "allow" }
           },
           {
-            "name": "apicast.policy.apicast"
+            "name": "apicast.policy.3scale"
           }
         ],
         "api_backend": "http://test:$TEST_NGINX_SERVER_PORT/",
@@ -245,7 +245,7 @@ In order to test this, we use a backend that returns 403 on the first call, and
             "configuration": { "caching_type": "allow" }
           },
           {
-            "name": "apicast.policy.apicast"
+            "name": "apicast.policy.3scale"
           }
         ],
         "api_backend": "http://test:$TEST_NGINX_SERVER_PORT/",
@@ -296,7 +296,7 @@ caching policy after the apicast one.
       "proxy": {
         "policy_chain": [
           {
-            "name": "apicast.policy.apicast"
+            "name": "apicast.policy.3scale"
           },
           {
             "name": "apicast.policy.caching",

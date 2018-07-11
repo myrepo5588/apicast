@@ -46,7 +46,7 @@ local mt = {
 -- @treturn PolicyChain New PolicyChain
 function _M.build(modules)
     local chain = {}
-    local list = modules or { 'apicast.policy.apicast' }
+    local list = modules or { 'apicast.policy.3scale' }
 
     for i=1, #list do
         -- TODO: make this error better, possibly not crash and just log and skip the module

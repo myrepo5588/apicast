@@ -24,7 +24,7 @@ once, not on every request.
           backend_authentication_type = 'service_token',
           backend_authentication_value = 'token-value',
           proxy = {
-            policy_chain = { { name = 'apicast.policy.phase_logger' }, { name = 'apicast.policy.apicast' } },
+            policy_chain = { { name = 'apicast.policy.phase_logger' }, { name = 'apicast.policy.3scale' } },
             api_backend = "http://127.0.0.1:$TEST_NGINX_SERVER_PORT/api-backend/",
             proxy_rules = {
               {

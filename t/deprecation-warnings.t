@@ -39,7 +39,7 @@ GET /echo?user_key=foo
 [error]
 --- grep_error_log eval: qr/DEPRECATION:[^,]+/
 --- grep_error_log_out
-DEPRECATION: file renamed - change: require("apicast") to: require("apicast.policy.apicast")
+DEPRECATION: file renamed - change: require("apicast") to: require("apicast.policy.3scale")
 
 
 === TEST 2: deprecation warnings

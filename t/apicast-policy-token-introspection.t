@@ -319,7 +319,7 @@ introspection endpoint from the oidc_issuer_endpoint of the service configuratio
               "auth_type": "use_3scale_oidc_issuer_endpoint"
             }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }
@@ -381,7 +381,7 @@ When authentication_method = 1, the request fails.
               "auth_type": "use_3scale_oidc_issuer_endpoint"
             }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }

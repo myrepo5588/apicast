@@ -36,7 +36,7 @@ to the one we have set up. If this was not working we would notice, because
                 "rules": [ { "regex": "/", "url": "http://test:$TEST_NGINX_SERVER_PORT" } ]
               }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }
@@ -94,7 +94,7 @@ upstream we have set up.
                 ]
               }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }
@@ -151,7 +151,7 @@ upstream in 'api_backend'.
                 ]
               }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }
@@ -207,7 +207,7 @@ yay, api backend
                 ]
               }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }
@@ -257,7 +257,7 @@ yay, api backend
                 "rules": [ { "regex": "/", "url": "http://test:$TEST_NGINX_SERVER_PORT" } ]
               }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }
@@ -457,7 +457,7 @@ instead of the rewritten one.
               ]
             }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }
@@ -517,7 +517,7 @@ instead of the original one.
               "rules": [ { "regex": "/rewritten", "url": "http://test:$TEST_NGINX_SERVER_PORT" } ]
             }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }

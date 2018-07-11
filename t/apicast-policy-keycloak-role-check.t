@@ -52,7 +52,7 @@ The client which has the appropriate role accesses the resource.
               ]
             }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }
@@ -131,7 +131,7 @@ The client which doesn't have the inappropriate role accesses the resource.
               "type": "blacklist"
             }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }
@@ -213,7 +213,7 @@ The client which doesn't have the appropriate role accesses the resource.
               ]
             }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }
@@ -291,7 +291,7 @@ The client which has the inappropriate role accesses the resource.
               "type": "blacklist"
             }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }
@@ -376,7 +376,7 @@ The client which has the appropriate role accesses the resource.
               ]
             }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }

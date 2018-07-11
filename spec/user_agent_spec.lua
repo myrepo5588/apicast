@@ -62,7 +62,7 @@ describe('User Agent', function()
 
   describe('.platform', function()
     it('includes os information', function()
-      local apicast = require('apicast.policy.apicast')
+      local apicast = require('apicast.policy.3scale')
 
       assert.same('APIcast/' .. apicast._VERSION, user_agent.platform())
     end)

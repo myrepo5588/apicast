@@ -37,7 +37,7 @@ We test 4 things:
           { "pattern": "/", "http_method": "GET", "metric_system_name": "hits", "delta": 2 }
         ],
         "policy_chain": [
-          { "name": "apicast.policy.apicast" },
+          { "name": "apicast.policy.3scale" },
           {
             "name": "apicast.policy.headers",
             "configuration":
@@ -109,7 +109,7 @@ We test 3 things:
           { "pattern": "/", "http_method": "GET", "metric_system_name": "hits", "delta": 2 }
         ],
         "policy_chain": [
-          { "name": "apicast.policy.apicast" },
+          { "name": "apicast.policy.3scale" },
           {
             "name": "apicast.policy.headers",
             "configuration":
@@ -179,7 +179,7 @@ We test 3 things:
           { "pattern": "/", "http_method": "GET", "metric_system_name": "hits", "delta": 2 }
         ],
         "policy_chain": [
-          { "name": "apicast.policy.apicast" },
+          { "name": "apicast.policy.3scale" },
           {
             "name": "apicast.policy.headers",
             "configuration":
@@ -246,7 +246,7 @@ We test 3 things:
           { "pattern": "/", "http_method": "GET", "metric_system_name": "hits", "delta": 2 }
         ],
         "policy_chain": [
-          { "name": "apicast.policy.apicast" },
+          { "name": "apicast.policy.3scale" },
           {
             "name": "apicast.policy.headers",
             "configuration":
@@ -310,7 +310,7 @@ We test 2 things:
           { "pattern": "/", "http_method": "GET", "metric_system_name": "hits", "delta": 2 }
         ],
         "policy_chain": [
-          { "name": "apicast.policy.apicast" },
+          { "name": "apicast.policy.3scale" },
           {
             "name": "apicast.policy.headers",
             "configuration":
@@ -374,7 +374,7 @@ We test 3 things:
           { "pattern": "/", "http_method": "GET", "metric_system_name": "hits", "delta": 2 }
         ],
         "policy_chain": [
-          { "name": "apicast.policy.apicast" },
+          { "name": "apicast.policy.3scale" },
           {
             "name": "apicast.policy.headers",
             "configuration":
@@ -433,7 +433,7 @@ configuration.
           { "pattern": "/", "http_method": "GET", "metric_system_name": "hits", "delta": 2 }
         ],
         "policy_chain": [
-          { "name": "apicast.policy.apicast" },
+          { "name": "apicast.policy.3scale" },
           { "name": "apicast.policy.headers" }
         ]
       }
@@ -479,7 +479,7 @@ Test that we can apply filters and also get values from the policies context
           { "pattern": "/", "http_method": "GET", "metric_system_name": "hits", "delta": 2 }
         ],
         "policy_chain": [
-          { "name": "apicast.policy.apicast" },
+          { "name": "apicast.policy.3scale" },
           {
             "name": "apicast.policy.headers",
             "configuration":
@@ -560,7 +560,7 @@ Notice that in the configuration, oidc.config.public_key is the one in
           { "pattern": "/", "http_method": "GET", "metric_system_name": "hits", "delta": 2 }
         ],
         "policy_chain": [
-          { "name": "apicast.policy.apicast" },
+          { "name": "apicast.policy.3scale" },
           {
             "name": "apicast.policy.headers",
             "configuration":

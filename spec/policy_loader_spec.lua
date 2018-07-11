@@ -4,16 +4,16 @@ describe('APIcast Policy Loader', function()
 
   describe(':load_path', function()
     it('finds builtin policies', function()
-      local path = _M:load_path('apicast', 'builtin')
+      local path = _M:load_path('3scale', 'builtin')
 
-      assert.match([[%g+/gateway/src/apicast/policy/apicast/%?.lua]], path)
+      assert.match([[%g+/gateway/src/apicast/policy/3scale/%?.lua]], path)
     end)
   end)
 
   describe(':call', function()
     it('finds apicast builtin policy', function()
-      local root = require('apicast.policy.apicast')
-      local sandbox = _M:call('apicast')
+      local root = require('apicast.policy.3scale')
+      local sandbox = _M:call('3scale')
 
       assert.is_table(sandbox)
       assert.are_not.same(root, sandbox)
@@ -52,7 +52,7 @@ describe('APIcast Policy Loader', function()
 
   describe(':pcall', function()
     it('returns the existing module', function()
-      assert(_M:call('apicast'))
+      assert(_M:call('3scale'))
     end)
 
     it('returns nil and error for invalid module', function()

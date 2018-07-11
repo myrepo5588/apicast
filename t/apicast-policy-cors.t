@@ -20,7 +20,7 @@ the request received.
       "proxy": {
         "policy_chain": [
           { "name": "apicast.policy.cors" },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ],
         "api_backend": "http://test:$TEST_NGINX_SERVER_PORT/",
         "proxy_rules": [
@@ -62,7 +62,7 @@ the request. So for example, if the request sets the 'Origin' header to
       "proxy": {
         "policy_chain": [
           { "name": "apicast.policy.cors" },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ],
         "api_backend": "http://test:$TEST_NGINX_SERVER_PORT/",
         "proxy_rules": [
@@ -118,7 +118,7 @@ the CORS headers in the response.
                                "allow_methods": [ "POST", "GET", "OPTIONS" ],
                                "allow_origin" : "*",
                                "allow_credentials": false } },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ],
         "api_backend": "http://test:$TEST_NGINX_SERVER_PORT/",
         "proxy_rules": [

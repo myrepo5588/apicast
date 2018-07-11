@@ -48,7 +48,7 @@ Test that the usage reported to backend is the sum of:
               ]
             }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }
@@ -113,7 +113,7 @@ Test that the usage reported to backend is the sum of:
               ]
             }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }
@@ -185,7 +185,7 @@ because it takes precedence over the one in the SOAPAction header.
               ]
             }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }
@@ -250,7 +250,7 @@ mapping rules.
               ]
             }
           },
-          { "name": "apicast.policy.apicast" }
+          { "name": "apicast.policy.3scale" }
         ]
       }
     }

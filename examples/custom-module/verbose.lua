@@ -1,4 +1,4 @@
-local apicast = require('apicast').new()
+local apicast = require('3scale').new()
 
 local _M = { _VERSION = '0.0' }
 local mt = { __index = setmetatable(_M, { __index = apicast }) }
