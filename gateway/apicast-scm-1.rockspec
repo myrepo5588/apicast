@@ -22,6 +22,7 @@ dependencies = {
    'penlight',
    'nginx-lua-prometheus',
    'lua-resty-jit-uuid',
+   'lpeg',
 }
 build = {
    type = "make",
