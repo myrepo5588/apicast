@@ -11,7 +11,8 @@ local lrucache = require 'resty.lrucache'
 local _M = {
   _VERSION = '0.1',
   path_routing = env.enabled('APICAST_PATH_ROUTING') or env.enabled('APICAST_PATH_ROUTING_ENABLED'),
-  cache_size = 1000
+  cache_size = 1000,
+  ttl = tonumber(env.value('APICAST_CONFIGURATION_CACHE')),
 }
 
 if env.enabled('APICAST_PATH_ROUTING_ENABLED') then ngx.log(ngx.WARN, 'DEPRECATION NOTICE: Use APICAST_PATH_ROUTING not APICAST_PATH_ROUTING_ENABLED as this will soon be unsupported') end
@@ -106,6 +107,13 @@ function _M.store(self, config, ttl)
   local by_host = setmetatable({}, hashed_array)
   local oidc = config.oidc or {}
 
+  local cache_ttl = config.ttl or ttl or _M.ttl
+
+  -- In lrucache a value < 0 expires, but we use configs and ENVs for
+  -- setting the ttl where < 0 means 'never expire'. When ttl < 0,
+  -- we need to set it to nil (never expire in lrucache).
+  if cache_ttl and cache_ttl < 0 then cache_ttl = nil end
+
   local ids = {}
 
   for i=1, #services do
@@ -121,7 +129,7 @@ function _M.store(self, config, ttl)
     end
 
     if not ids[id] then
-      ngx.log(ngx.INFO, 'added service ', id, ' configuration with hosts: ', concat(hosts, ', '), ' ttl: ', ttl)
+      ngx.log(ngx.INFO, 'added service ', id, ' configuration with hosts: ', concat(hosts, ', '), ' ttl: ', cache_ttl)
 
       for j=1, #hosts do
         local host = lower(hosts[j])
@@ -143,12 +151,6 @@ function _M.store(self, config, ttl)
 
   local cache = self.cache
 
-  local cache_ttl = config.ttl or ttl or _M.ttl
-
-  -- In lrucache a value < 0 expires, but we use configs and ENVs for
-  -- setting the ttl where < 0 means 'never expire'. When ttl < 0,
-  -- we need to set it to nil (never expire in lrucache).
-  if cache_ttl and cache_ttl < 0 then cache_ttl = nil end
 
   for host, services_for_host in pairs(by_host) do
     cache:set(host, services_for_host, cache_ttl)

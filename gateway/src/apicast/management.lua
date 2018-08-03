@@ -9,6 +9,7 @@ local inspect = require('inspect')
 local resolver_cache = require('resty.resolver.cache')
 local env = require('resty.env')
 local policy_manifests_loader = require('apicast.policy_manifests_loader')
+local http_plugin = require('apicast.3scale_http_plugin')
 
 local live = { status = 'live', success = true }
 
@@ -161,6 +162,11 @@ end
 
 function routes.policies(r)
   r:get('/policies/', _M.get_all_policy_manifests)
+end
+
+function routes.http_plugin(r)
+  r:put('/auth', http_plugin.auth)
+  r:post('/report', http_plugin.report)
 end
 
 function _M.router()
