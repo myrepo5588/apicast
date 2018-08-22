@@ -6,18 +6,15 @@ local insert = table.insert
 local rawset = rawset
 local encode_args = ngx.encode_args
 local tonumber = tonumber
-local type = type
 
 local resty_url = require 'resty.url'
 local http_ng = require "resty.http_ng"
 local user_agent = require 'apicast.user_agent'
 local cjson = require 'cjson'
 local resty_env = require 'resty.env'
-local Mime = require 'resty.mime'
 local re = require 'ngx.re'
 local configuration = require 'apicast.configuration'
-
-local oidc_log_level = ngx[string.upper(resty_env.value('APICAST_OIDC_LOG_LEVEL') or 'err')] or ngx.ERR
+local oidc_discovery = require('resty.oidc.discovery')
 
 local _M = {
   _VERSION = '0.1'
@@ -232,64 +229,15 @@ function _M:services()
   end
 end
 
-local function openid_configuration_url(endpoint)
-  if endpoint and type(endpoint) == 'string' and len(endpoint) > 0 then
-    return resty_url.join(endpoint, '.well-known/openid-configuration')
-  end
-end
-
-local function mime_type(content_type)
-  return Mime.new(content_type).media_type
-end
-
-local function decode_json(response)
-  return mime_type(response.headers.content_type) == 'application/json' and cjson.decode(response.body)
-end
-
 function _M:oidc_issuer_configuration(service)
-  local http_client = self.http_client
+  local issuer = { } -- we don't need this anymore
 
-  if not http_client then
-    return nil, 'not initialized'
-  end
-
-  local uri = openid_configuration_url(service.oidc.issuer_endpoint)
-
-  if not uri then
-    return nil, 'no OIDC endpoint'
-  end
-
-  local res = http_client.get(uri)
-
-  if res.status ~= 200 then
-    ngx.log(oidc_log_level, 'failed to get OIDC Provider from ', uri, ' status: ', res.status, ' body: ', res.body)
-    return nil, 'could not get OpenID Connect configuration'
-  end
-
-  local config = decode_json(res)
-
-  if not config then
-    ngx.log(oidc_log_level, 'invalid OIDC Provider, expected application/json got:  ', res.headers.content_type, ' body: ', res.body)
-    return nil, 'invalid JSON'
-  end
-
+  local config = oidc_discovery.openid_configuration(self, service.oidc.issuer_endpoint)
   local oidc = { issuer = config.issuer, config = { openid = config } }
 
-  res = http_client.get(config.issuer)
-
-  if res.status ~= 200 then
-    ngx.log(oidc_log_level, 'failed to get OIDC Issuer from ', uri, ' status: ', res.status, ' body: ', res.body)
-    return oidc, 'could not get OpenID Connect Issuer'
-  end
-
-  local issuer = decode_json(res)
-
-  if not issuer then
-    ngx.log(oidc_log_level, 'invalid OIDC Issuer, expected application/json got:  ', res.headers.content_type, ' body: ', res.body)
-    return oidc, 'invalid JSON'
-  end
-
+  issuer.keys = oidc_discovery.jwk(self, config)
   issuer.openid = config
+
   oidc.config = issuer
 
   return oidc

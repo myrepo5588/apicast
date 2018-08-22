@@ -2,10 +2,12 @@
   "services": [
     {
       "id": 1234,
-      "backend_version": 1,
+      "backend_version": "oauth",
       "proxy": {
         "api_backend": "http://127.0.0.1:8081",
         "hostname_rewrite": "echo",
+        "authentication_method": "oidc",
+        "oidc_issuer_endpoint": "http://localhost:8000/auth/realms/master",
         "hosts": [
           "localhost",
           "127.0.0.1"

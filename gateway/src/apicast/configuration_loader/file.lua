@@ -6,6 +6,7 @@ local assert = assert
 local sub = string.sub
 local util = require 'apicast.util'
 local env = require 'resty.env'
+local oidc = require 'apicast.configuration_loader.oidc'
 
 local _M = {
   _VERSION = '0.1'
@@ -57,7 +58,7 @@ end
 function _M.call(path)
   local file = path or env.get('THREESCALE_CONFIG_FILE')
 
-  return read(file)
+  return oidc.call(read(file))
 end
 
 return _M

@@ -232,3 +232,76 @@ adsf
 And edit `examples/configuration/oidc/admin/api/services/oidc/proxy/configs/production/latest.json` to provide the correct public key.
 
 
+
+# Keycloak difference
+
+Start keycloak:
+
+```shell
+docker run -e DB_VENDOR=H2 -e KEYCLOAK_USER=keycloak -e KEYCLOAK_PASSWORD=keycloak -p 8000:8080 jboss/keycloak:4.3.0.Final
+```
+
+Get OIDC Discovery:
+```shell
+curl http://localhost:8000/auth/realms/master/.well-known/openid-configuration
+```
+
+```json
+{
+  "issuer": "http://localhost:8000/auth/realms/master",
+  "authorization_endpoint": "http://localhost:8000/auth/realms/master/protocol/openid-connect/auth",
+  "token_endpoint": "http://localhost:8000/auth/realms/master/protocol/openid-connect/token",
+  "token_introspection_endpoint": "http://localhost:8000/auth/realms/master/protocol/openid-connect/token/introspect",
+  "userinfo_endpoint": "http://localhost:8000/auth/realms/master/protocol/openid-connect/userinfo",
+  "end_session_endpoint": "http://localhost:8000/auth/realms/master/protocol/openid-connect/logout",
+  "jwks_uri": "http://localhost:8000/auth/realms/master/protocol/openid-connect/certs",
+  "check_session_iframe": "http://localhost:8000/auth/realms/master/protocol/openid-connect/login-status-iframe.html",
+  "grant_types_supported": ["authorization_code", "implicit", "refresh_token", "password", "client_credentials"],
+  "response_types_supported": [
+    "code",
+    "none",
+    "id_token",
+    "token",
+    "id_token token",
+    "code id_token",
+    "code token",
+    "code id_token token"
+  ],
+  "subject_types_supported": ["public", "pairwise"],
+  "id_token_signing_alg_values_supported": ["RS256"],
+  "userinfo_signing_alg_values_supported": ["RS256"],
+  "request_object_signing_alg_values_supported": ["none", "RS256"],
+  "response_modes_supported": ["query", "fragment", "form_post"],
+  "registration_endpoint": "http://localhost:8000/auth/realms/master/clients-registrations/openid-connect",
+  "token_endpoint_auth_methods_supported": ["private_key_jwt", "client_secret_basic", "client_secret_post", "client_secret_jwt"],
+  "token_endpoint_auth_signing_alg_values_supported": ["RS256"],
+  "claims_supported": ["sub", "iss", "auth_time", "name", "given_name", "family_name", "preferred_username", "email"],
+  "claim_types_supported": ["normal"],
+  "claims_parameter_supported": false,
+  "scopes_supported": ["openid", "address", "email", "offline_access", "phone", "profile"],
+  "request_parameter_supported": true,
+  "request_uri_parameter_supported": true,
+  "code_challenge_methods_supported": ["plain", "S256"],
+  "tls_client_certificate_bound_access_tokens": true
+}
+```
+
+Get JWK:
+```shell
+curl http://localhost:8000/auth/realms/master/protocol/openid-connect/certs
+```
+
+```json
+{
+  "keys": [
+    {
+      "kid": "3g-I9PWt6NrznPLcbE4zZrakXar27FDKEpqRPlD2i2Y",
+      "kty": "RSA",
+      "alg": "RS256",
+      "use": "sig",
+      "n": "iqXwBiZgN2q1dCKU1P_vzyiGacdQhfqgxQST7GFlWU_PUljV9uHrLOadWadpxRAuskNpXWsrKoU_hDxtSpUIRJj6hL5YTlrvv-IbFwPNtD8LnOfKL043_ZdSOe3aT4R4NrBxUomndILUESlhqddylVMCGXQ81OB73muc9ovR68Ajzn8KzpU_qegh8iHwk-SQvJxIIvgNJCJTC6BWnwS9Bw2ns0fQOZZRjWFRVh8BjkVdqa4vCAb6zw8hpR1y9uSNG-fqUAPHy5IYQaD8k8QX0obxJ0fld61fH-Wr3ENpn9YZWYBcKvnwLm2bvxqmNVBzW4rhGEZb9mf-KrSagD5GUw",
+      "e": "AQAB"
+    }
+  ]
+}
+```

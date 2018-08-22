@@ -5,7 +5,6 @@ local lrucache = require 'resty.lrucache'
 local util = require 'apicast.util'
 
 local setmetatable = setmetatable
-local len = string.len
 local ngx_now = ngx.now
 local format = string.format
 
@@ -30,12 +29,13 @@ function _M.new(service)
   local oidc = service.oidc
   local issuer = oidc.issuer or oidc.issuer_endpoint
   local config = oidc.config or {}
-  local openid = config.openid or {}
+  local openid = config.openid or config
 
   return setmetatable({
     service = service,
     config = config,
     issuer = issuer,
+    keys = oidc.keys,
     clock = ngx_now,
     alg_whitelist = util.to_hash(openid.id_token_signing_alg_values_supported),
     jwt_claims = {
@@ -53,19 +53,9 @@ local function timestamp_to_seconds_from_now(expiry, clock)
   return ttl
 end
 
--- Formats the realm public key string into Public Key File (PKCS#8) format
-local function format_public_key(key)
-  if not key then
-    return nil, 'missing key'
-  end
-
-  local formatted_key = "-----BEGIN PUBLIC KEY-----\n"
-  local key_len = len(key)
-  for i=1,key_len,64 do
-    formatted_key = formatted_key..string.sub(key, i, i+63).."\n"
-  end
-  formatted_key = formatted_key.."-----END PUBLIC KEY-----"
-  return formatted_key
+local function find_public_key(jwt, keys)
+  local jwk = keys[jwt.header.kid]
+  if jwk then return jwk.pem end
 end
 
 -- Parses the token - in this case we assume it's a JWT token
@@ -98,7 +88,7 @@ local function parse_and_verify_token(self, jwt_token)
   end
 
   -- TODO: this should be able to use DER format instead of PEM
-  local pubkey = format_public_key(self.config.public_key)
+  local pubkey = find_public_key(jwt_obj, self.keys)
 
   if not pubkey then
     return jwt_obj, '[jwt] missing public key for signature verification'
