@@ -54,6 +54,8 @@ local function get_payload()
     -- TODO: detect content type
     local body = ngx.req.get_body_data()
 
+    ngx.log(ngx.DEBUG, 'got payload: ', body)
+
     return cjson.decode(body)
 end
 
