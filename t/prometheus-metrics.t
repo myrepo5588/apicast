@@ -17,40 +17,40 @@ GET /metrics
 --- more_headers
 Host: metrics
 --- response_body
-# HELP nginx_http_connections Number of HTTP connections
-# TYPE nginx_http_connections gauge
-nginx_http_connections{state="accepted"} 1
-nginx_http_connections{state="active"} 1
-nginx_http_connections{state="handled"} 1
-nginx_http_connections{state="reading"} 0
-nginx_http_connections{state="total"} 1
-nginx_http_connections{state="waiting"} 0
-nginx_http_connections{state="writing"} 1
-# HELP nginx_metric_errors_total Number of nginx-lua-prometheus errors
-# TYPE nginx_metric_errors_total counter
-nginx_metric_errors_total 0
-# HELP openresty_shdict_capacity OpenResty shared dictionary capacity
-# TYPE openresty_shdict_capacity gauge
-openresty_shdict_capacity{dict="api_keys"} 10485760
-openresty_shdict_capacity{dict="batched_reports"} 1048576
-openresty_shdict_capacity{dict="batched_reports_locks"} 1048576
-openresty_shdict_capacity{dict="cached_auths"} 1048576
-openresty_shdict_capacity{dict="configuration"} 10485760
-openresty_shdict_capacity{dict="init"} 16384
-openresty_shdict_capacity{dict="limiter"} 1048576
-openresty_shdict_capacity{dict="locks"} 1048576
-openresty_shdict_capacity{dict="prometheus_metrics"} 16777216
-# HELP openresty_shdict_free_space OpenResty shared dictionary free space
-# TYPE openresty_shdict_free_space gauge
-openresty_shdict_free_space{dict="api_keys"} 10412032
-openresty_shdict_free_space{dict="batched_reports"} 1032192
-openresty_shdict_free_space{dict="batched_reports_locks"} 1032192
-openresty_shdict_free_space{dict="cached_auths"} 1032192
-openresty_shdict_free_space{dict="configuration"} 10412032
-openresty_shdict_free_space{dict="init"} 4096
-openresty_shdict_free_space{dict="limiter"} 1032192
-openresty_shdict_free_space{dict="locks"} 1032192
-openresty_shdict_free_space{dict="prometheus_metrics"} 16662528
+# HELP apicast_nginx_http_connections Number of HTTP connections
+# TYPE apicast_nginx_http_connections gauge
+apicast_nginx_http_connections{state="accepted"} 1
+apicast_nginx_http_connections{state="active"} 1
+apicast_nginx_http_connections{state="handled"} 1
+apicast_nginx_http_connections{state="reading"} 0
+apicast_nginx_http_connections{state="total"} 1
+apicast_nginx_http_connections{state="waiting"} 0
+apicast_nginx_http_connections{state="writing"} 1
+# HELP apicast_nginx_metric_errors_total Number of nginx-lua-prometheus errors
+# TYPE apicast_nginx_metric_errors_total counter
+apicast_nginx_metric_errors_total 0
+# HELP apicast_openresty_shdict_capacity OpenResty shared dictionary capacity
+# TYPE apicast_openresty_shdict_capacity gauge
+apicast_openresty_shdict_capacity{dict="api_keys"} 10485760
+apicast_openresty_shdict_capacity{dict="batched_reports"} 1048576
+apicast_openresty_shdict_capacity{dict="batched_reports_locks"} 1048576
+apicast_openresty_shdict_capacity{dict="cached_auths"} 1048576
+apicast_openresty_shdict_capacity{dict="configuration"} 10485760
+apicast_openresty_shdict_capacity{dict="init"} 16384
+apicast_openresty_shdict_capacity{dict="limiter"} 1048576
+apicast_openresty_shdict_capacity{dict="locks"} 1048576
+apicast_openresty_shdict_capacity{dict="prometheus_metrics"} 16777216
+# HELP apicast_openresty_shdict_free_space OpenResty shared dictionary free space
+# TYPE apicast_openresty_shdict_free_space gauge
+apicast_openresty_shdict_free_space{dict="api_keys"} 10412032
+apicast_openresty_shdict_free_space{dict="batched_reports"} 1032192
+apicast_openresty_shdict_free_space{dict="batched_reports_locks"} 1032192
+apicast_openresty_shdict_free_space{dict="cached_auths"} 1032192
+apicast_openresty_shdict_free_space{dict="configuration"} 10412032
+apicast_openresty_shdict_free_space{dict="init"} 4096
+apicast_openresty_shdict_free_space{dict="limiter"} 1032192
+apicast_openresty_shdict_free_space{dict="locks"} 1032192
+apicast_openresty_shdict_free_space{dict="prometheus_metrics"} 16662528
 --- error_code: 200
 --- no_error_log
 [error]
@@ -108,13 +108,13 @@ that does not include the nginx metrics (tested in the previous test).
 --- response_body eval
 [ "yay, api backend\x{0a}", "yay, api backend\x{0a}", "Authentication failed", "Authentication failed",
 <<'METRICS_OUTPUT'
-# HELP nginx_metric_errors_total Number of nginx-lua-prometheus errors
-# TYPE nginx_metric_errors_total counter
-nginx_metric_errors_total 0
-# HELP threescale_backend_response Response status codes from 3scale's backend
-# TYPE threescale_backend_response counter
-threescale_backend_response{status="2xx"} 2
-threescale_backend_response{status="4xx"} 2
+# HELP apicast_nginx_metric_errors_total Number of nginx-lua-prometheus errors
+# TYPE apicast_nginx_metric_errors_total counter
+apicast_nginx_metric_errors_total 0
+# HELP apicast_threescale_backend_response Response status codes from 3scale's backend
+# TYPE apicast_threescale_backend_response counter
+apicast_threescale_backend_response{status="2xx"} 2
+apicast_threescale_backend_response{status="4xx"} 2
 METRICS_OUTPUT
 ]
 --- no_error_log
@@ -174,18 +174,18 @@ We use and env file without the nginx metrics to simplify the output of the
 --- response_body eval
 [ "yay, api backend\x{0a}", "yay, api backend\x{0a}", "yay, api backend\x{0a}",
 <<'METRICS_OUTPUT'
-# HELP batching_policy_auths_cache_hits Hits in the auths cache of the 3scale batching policy
-# TYPE batching_policy_auths_cache_hits counter
-batching_policy_auths_cache_hits 2
-# HELP batching_policy_auths_cache_misses Misses in the auths cache of the 3scale batching policy
-# TYPE batching_policy_auths_cache_misses counter
-batching_policy_auths_cache_misses 1
-# HELP nginx_metric_errors_total Number of nginx-lua-prometheus errors
-# TYPE nginx_metric_errors_total counter
-nginx_metric_errors_total 0
-# HELP threescale_backend_response Response status codes from 3scale's backend
-# TYPE threescale_backend_response counter
-threescale_backend_response{status="2xx"} 1
+# HELP apicast_batching_policy_auths_cache_hits Hits in the auths cache of the 3scale batching policy
+# TYPE apicast_batching_policy_auths_cache_hits counter
+apicast_batching_policy_auths_cache_hits 2
+# HELP apicast_batching_policy_auths_cache_misses Misses in the auths cache of the 3scale batching policy
+# TYPE apicast_batching_policy_auths_cache_misses counter
+apicast_batching_policy_auths_cache_misses 1
+# HELP apicast_nginx_metric_errors_total Number of nginx-lua-prometheus errors
+# TYPE apicast_nginx_metric_errors_total counter
+apicast_nginx_metric_errors_total 0
+# HELP apicast_threescale_backend_response Response status codes from 3scale's backend
+# TYPE apicast_threescale_backend_response counter
+apicast_threescale_backend_response{status="2xx"} 1
 METRICS_OUTPUT
 ]
 --- no_error_log

@@ -2,8 +2,10 @@ local prometheus = require('nginx.prometheus')
 local assert = assert
 local dict = 'prometheus_metrics'
 
+local metrics_prefix = 'apicast_'
+
 if ngx.shared[dict] then
-  local init = prometheus.init(dict)
+  local init = prometheus.init(dict, metrics_prefix)
 
   local metrics = { }
   local __call = function(_, type, name, ...)
