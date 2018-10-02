@@ -17,40 +17,40 @@ GET /metrics
 --- more_headers
 Host: metrics
 --- response_body
-# HELP apicast_nginx_http_connections Number of HTTP connections
-# TYPE apicast_nginx_http_connections gauge
-apicast_nginx_http_connections{state="accepted"} 1
-apicast_nginx_http_connections{state="active"} 1
-apicast_nginx_http_connections{state="handled"} 1
-apicast_nginx_http_connections{state="reading"} 0
-apicast_nginx_http_connections{state="total"} 1
-apicast_nginx_http_connections{state="waiting"} 0
-apicast_nginx_http_connections{state="writing"} 1
+# HELP apicast_http_connections Number of HTTP connections
+# TYPE apicast_http_connections gauge
+apicast_http_connections{state="accepted"} 1
+apicast_http_connections{state="active"} 1
+apicast_http_connections{state="handled"} 1
+apicast_http_connections{state="reading"} 0
+apicast_http_connections{state="total"} 1
+apicast_http_connections{state="waiting"} 0
+apicast_http_connections{state="writing"} 1
 # HELP apicast_nginx_metric_errors_total Number of nginx-lua-prometheus errors
 # TYPE apicast_nginx_metric_errors_total counter
 apicast_nginx_metric_errors_total 0
-# HELP apicast_openresty_shdict_capacity OpenResty shared dictionary capacity
-# TYPE apicast_openresty_shdict_capacity gauge
-apicast_openresty_shdict_capacity{dict="api_keys"} 10485760
-apicast_openresty_shdict_capacity{dict="batched_reports"} 1048576
-apicast_openresty_shdict_capacity{dict="batched_reports_locks"} 1048576
-apicast_openresty_shdict_capacity{dict="cached_auths"} 1048576
-apicast_openresty_shdict_capacity{dict="configuration"} 10485760
-apicast_openresty_shdict_capacity{dict="init"} 16384
-apicast_openresty_shdict_capacity{dict="limiter"} 1048576
-apicast_openresty_shdict_capacity{dict="locks"} 1048576
-apicast_openresty_shdict_capacity{dict="prometheus_metrics"} 16777216
-# HELP apicast_openresty_shdict_free_space OpenResty shared dictionary free space
-# TYPE apicast_openresty_shdict_free_space gauge
-apicast_openresty_shdict_free_space{dict="api_keys"} 10412032
-apicast_openresty_shdict_free_space{dict="batched_reports"} 1032192
-apicast_openresty_shdict_free_space{dict="batched_reports_locks"} 1032192
-apicast_openresty_shdict_free_space{dict="cached_auths"} 1032192
-apicast_openresty_shdict_free_space{dict="configuration"} 10412032
-apicast_openresty_shdict_free_space{dict="init"} 4096
-apicast_openresty_shdict_free_space{dict="limiter"} 1032192
-apicast_openresty_shdict_free_space{dict="locks"} 1032192
-apicast_openresty_shdict_free_space{dict="prometheus_metrics"} 16662528
+# HELP apicast_shdict_capacity OpenResty shared dictionary capacity
+# TYPE apicast_shdict_capacity gauge
+apicast_shdict_capacity{dict="api_keys"} 10485760
+apicast_shdict_capacity{dict="batched_reports"} 1048576
+apicast_shdict_capacity{dict="batched_reports_locks"} 1048576
+apicast_shdict_capacity{dict="cached_auths"} 1048576
+apicast_shdict_capacity{dict="configuration"} 10485760
+apicast_shdict_capacity{dict="init"} 16384
+apicast_shdict_capacity{dict="limiter"} 1048576
+apicast_shdict_capacity{dict="locks"} 1048576
+apicast_shdict_capacity{dict="prometheus_metrics"} 16777216
+# HELP apicast_shdict_free_space OpenResty shared dictionary free space
+# TYPE apicast_shdict_free_space gauge
+apicast_shdict_free_space{dict="api_keys"} 10412032
+apicast_shdict_free_space{dict="batched_reports"} 1032192
+apicast_shdict_free_space{dict="batched_reports_locks"} 1032192
+apicast_shdict_free_space{dict="cached_auths"} 1032192
+apicast_shdict_free_space{dict="configuration"} 10412032
+apicast_shdict_free_space{dict="init"} 4096
+apicast_shdict_free_space{dict="limiter"} 1032192
+apicast_shdict_free_space{dict="locks"} 1032192
+apicast_shdict_free_space{dict="prometheus_metrics"} 16666624
 --- error_code: 200
 --- no_error_log
 [error]

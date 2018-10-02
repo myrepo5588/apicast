@@ -66,10 +66,10 @@ function _M.new(configuration)
   return m
 end
 
-local logs_metric = prometheus('counter', 'nginx_error_log', "Items in nginx error log", {'level'})
-local http_connections_metric =  prometheus('gauge', 'nginx_http_connections', 'Number of HTTP connections', {'state'})
-local shdict_capacity_metric = prometheus('gauge', 'openresty_shdict_capacity', 'OpenResty shared dictionary capacity', {'dict'})
-local shdict_free_space_metric = prometheus('gauge', 'openresty_shdict_free_space', 'OpenResty shared dictionary free space', {'dict'})
+local logs_metric = prometheus('counter', 'error_log', "Items in nginx error log", {'level'})
+local http_connections_metric =  prometheus('gauge', 'http_connections', 'Number of HTTP connections', {'state'})
+local shdict_capacity_metric = prometheus('gauge', 'shdict_capacity', 'OpenResty shared dictionary capacity', {'dict'})
+local shdict_free_space_metric = prometheus('gauge', 'shdict_free_space', 'OpenResty shared dictionary free space', {'dict'})
 
 function _M.init()
   errlog.set_filter_level(filter_level())
