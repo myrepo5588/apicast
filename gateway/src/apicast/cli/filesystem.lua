@@ -9,9 +9,9 @@ local pl_path_dir = pl_path.dir
 local pl_path_join = pl_path.join
 local abspath = pl_path.abspath
 local pcall = pcall
-local co_yield = coroutine.yield
-local co_create = coroutine.create
-local co_resume = coroutine.resume
+local co_yield = coroutine._yield
+local co_create = coroutine._create
+local co_resume = coroutine._resume
 
 local noop = function () end
 

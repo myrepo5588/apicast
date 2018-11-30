@@ -77,20 +77,33 @@ local function nginx_prefix()
     if match then return match[1] end
 end
 
+local function dirtree(dir, cache)
+  local cached = cache[dir]
+
+  if cached then
+    return pairs(cached)
+  else
+    cache[dir] = {}
+    return fs(dir)
+  end
+end
+
 function _M:interpret(str)
     local interpreter = build_interpreter(str)
 
     local context = self.context
     local filesystem = self.filesystem
     local filter_set = FilterSet:new()
-    local resource_limit = ResourceLimit:new(nil, 1000, nil)
+    local resource_limit = ResourceLimit:new(100000000, 100000, nil)
+
+    local filesystem_cache = {}
 
     filter_set:add_filter('filesystem', function(pattern)
         local files = {}
         local included = {}
 
         for _, root in ipairs({ self.root, pl.path.currentdir(), ngx.config.prefix(), nginx_prefix() }) do
-            for filename in fs(root) do
+            for filename in dirtree(root, filesystem_cache) do
                 local file = pl.path.relpath(filename, root)
 
                 if pl.dir.fnmatch(file, pattern) and not included[filename] and not included[file] then
@@ -98,6 +111,8 @@ function _M:interpret(str)
                     included[filename] = true
                     included[file] = true
                 end
+
+                filesystem_cache[root][filename] = true
             end
         end
 
