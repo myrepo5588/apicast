@@ -39,7 +39,7 @@ local function gen_require(package)
     mod = package.loaded[modname]
 
     if not mod then
-      ngx.log(ngx.DEBUG, 'native require for: ', modname)
+      -- ngx.log(ngx.DEBUG, 'native require for: ', modname)
       mod = root_require(modname)
     end
 
@@ -81,7 +81,7 @@ local function gen_require(package)
   -- @tparam boolean exclusive load only sandboxed code, turns off the fallback loader
   return function(modname, exclusive)
     -- http://www.lua.org/manual/5.2/manual.html#pdf-require
-    ngx.log(ngx.DEBUG, 'sandbox require: ', modname)
+    -- ngx.log(ngx.DEBUG, 'sandbox require: ', modname)
 
     -- The function starts by looking into the package.loaded table
     -- to determine whether modname is already loaded.
@@ -97,13 +97,13 @@ local function gen_require(package)
 
     -- Once a loader is found,
     if loader then
-      ngx.log(ngx.DEBUG, 'sandboxed require for: ', modname, ' file: ', file)
+      -- ngx.log(ngx.DEBUG, 'sandboxed require for: ', modname, ' file: ', file)
       -- require calls the loader with two arguments:
       --   modname and an extra value dependent on how it got the loader.
       -- (If the loader came from a file, this extra value is the file name.)
       mod = loader(modname, file)
     elseif not exclusive then
-      ngx.log(ngx.DEBUG, 'fallback loader for: ', modname, ' error: ', err)
+      -- ngx.log(ngx.DEBUG, 'fallback loader for: ', modname, ' error: ', err)
       mod = fallback(modname)
     else
       -- If there is any error loading or running the module,
@@ -239,7 +239,7 @@ function _M.new(load_paths, cache)
     if file then
       loader, err = loadfile(file, 'bt', env)
 
-      ngx.log(ngx.DEBUG, 'loading file: ', file)
+      -- ngx.log(ngx.DEBUG, 'loading file: ', file)
 
       if loader then return loader, file end
     end
