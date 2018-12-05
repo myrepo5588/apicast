@@ -301,6 +301,11 @@ ignore-forks: &ignore-forks
 
 workflows:
   version: 2
+
+  profile:
+    jobs:
+      - profile
+
   build-test-deploy:
     jobs:
       - build-lua:
@@ -329,11 +334,6 @@ workflows:
       - s2i-runtime:
           <<: *build-tags
           context: org-global
-          requires:
-            - build-lua
-            - build-perl
-      - profile:
-          <<: *build-tags
           requires:
             - build-lua
             - build-perl
