@@ -9,6 +9,8 @@ local configuration = cjson.encode(cjson.decode([[{
           "127.0.0.1"
         ],
         "policy_chain": [
+          { "name": "apicast.policy.tls_validation",
+            "configuration": { } },
           { "name": "apicast.policy.echo" }
         ]
       }

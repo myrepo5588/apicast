@@ -1,0 +1,13 @@
+{
+  "$schema": "http://apicast.io/policy-v1/schema#manifest#",
+  "name": "tls_validation",
+  "summary": "TODO: write policy summary",
+  "description": [
+      "TODO: Write policy description"
+  ],
+  "version": "builtin",
+  "configuration": {
+    "type": "object",
+    "properties": { }
+  }
+}
