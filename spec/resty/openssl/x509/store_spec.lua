@@ -1,0 +1,15 @@
+local _M = require('resty.openssl.x509.store')
+
+describe('OpenSSL X509 Store', function()
+  describe('.new', function()
+    it('returns cdata', function ()
+      assert.equals('cdata', type(_M.new()))
+    end)
+  end)
+
+  describe(':add_cert', function()
+    it('has add_cert method', function()
+      assert(_M.new().add_cert)
+    end)
+  end)
+end)
