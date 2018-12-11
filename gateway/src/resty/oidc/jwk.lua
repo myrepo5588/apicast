@@ -1,5 +1,4 @@
 local ipairs = ipairs
-local error = error
 
 local b64 = require('ngx.base64')
 local ffi = require('ffi')
