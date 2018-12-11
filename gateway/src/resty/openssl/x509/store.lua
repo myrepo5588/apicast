@@ -1,4 +1,5 @@
 local base = require('resty.openssl.base')
+local X509_STORE_CTX = require('resty.openssl.x509.store.ctx')
 local ffi = require('ffi')
 
 ffi.cdef([[
@@ -17,17 +18,41 @@ int X509_STORE_set_flags(X509_STORE *ctx, unsigned long flags);
 int X509_STORE_set_purpose(X509_STORE *ctx, int purpose);
 int X509_STORE_set_trust(X509_STORE *ctx, int trust);
 
+// https://www.openssl.org/docs/man1.1.0/crypto/X509_STORE_set1_param.html
+int X509_STORE_set1_param(X509_STORE *store, X509_VERIFY_PARAM *pm);
+
+// https://www.openssl.org/docs/man1.1.0/crypto/X509_STORE_CTX_set0_param.html
+X509_VERIFY_PARAM *X509_VERIFY_PARAM_new(void);
+int X509_VERIFY_PARAM_set_flags(X509_VERIFY_PARAM *param,
+                                unsigned long flags);
+void X509_VERIFY_PARAM_free(X509_VERIFY_PARAM *param);
+
 // https://www.openssl.org/docs/man1.1.1/man3/X509_VERIFY_PARAM_set_depth.html
 ]])
 
 local C = ffi.C
 local ffi_assert = base.ffi_assert
 
+local X509_V_FLAG_PARTIAL_CHAIN = 0x80000
+
+local function X509_VERIFY_PARAM(flags)
+  local verify_param = ffi_assert(C.X509_VERIFY_PARAM_new())
+
+  -- https://www.openssl.org/docs/man1.1.0/crypto/X509_VERIFY_PARAM_get_depth.html#example
+  ffi_assert(C.X509_VERIFY_PARAM_set_flags(verify_param, flags))
+
+  return ffi.gc(verify_param, C.X509_VERIFY_PARAM_free)
+end
+
 local _M = {}
 local mt = {
   __index = _M,
   __new = function(ct)
     local store = ffi_assert(C.X509_STORE_new())
+
+    -- enabling partial chains allows us to trust leaf certificates
+    local verify_param = X509_VERIFY_PARAM(X509_V_FLAG_PARTIAL_CHAIN)
+    ffi_assert(C.X509_STORE_set1_param(store, verify_param),1)
 
     ffi.gc(store, C.X509_STORE_free)
 
@@ -36,10 +61,16 @@ local mt = {
 }
 
 -- no changes to the metamethods possible from this point
-local X509_STORE = ffi.metatype('struct { void *x509_store; }', mt)
+local X509_STORE = ffi.metatype('struct { void *cdata; }', mt)
 
 function _M:add_cert(x509)
-  return ffi_assert(C.X509_STORE_add_cert(self.x509_store, x509))
+  return ffi_assert(C.X509_STORE_add_cert(self.cdata, x509))
+end
+
+function _M:validate_cert(x509, chain)
+  local ctx = X509_STORE_CTX.new(self, x509, chain)
+
+  return ctx:validate()
 end
 
 function _M.new()

@@ -7,6 +7,7 @@ ffi.cdef([[
   typedef struct X509_crl_st X509_CRL;
   typedef struct bio_st BIO;
   typedef struct bio_method_st BIO_METHOD;
+  typedef struct X509_VERIFY_PARAM_st X509_VERIFY_PARAM;
 
   unsigned long ERR_get_error(void);
   const char *ERR_reason_error_string(unsigned long e);
@@ -55,7 +56,12 @@ local function ffi_assert(ret, expected)
   return ret
 end
 
+local function tocdata(obj)
+  return obj and obj.cdata or obj
+end
+
 _M.ffi_assert = ffi_assert
 _M.openssl_error = openssl_error
+_M.tocdata = tocdata
 
 return _M
