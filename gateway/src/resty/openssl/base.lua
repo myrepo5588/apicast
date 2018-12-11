@@ -10,6 +10,8 @@ ffi.cdef([[
 
   unsigned long ERR_get_error(void);
   const char *ERR_reason_error_string(unsigned long e);
+
+  void ERR_clear_error(void);
 ]])
 
 local C = ffi.C
@@ -38,13 +40,17 @@ local function openssl_error()
     end
   end
 
-  return ffi.string(reason)
+  if reason then
+    return ffi.string(reason)
+  end
 end
 
 local function ffi_assert(ret, expected)
   if not ret or ret == -1 or (expected and ret ~= expected) then
-    error(openssl_error(), 2)
+    error(openssl_error() or 'expected value, got nil', 2)
   end
+
+  C.ERR_clear_error()
 
   return ret
 end
