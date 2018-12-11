@@ -3,8 +3,6 @@ local BIO = require('resty.openssl.bio')
 local ffi = require('ffi')
 
 ffi.cdef([[
-typedef struct stack_st OPENSSL_STACK;
-
 int OPENSSL_sk_num(const OPENSSL_STACK *);
 void *OPENSSL_sk_value(const OPENSSL_STACK *, int);
 

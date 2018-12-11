@@ -8,6 +8,7 @@ ffi.cdef([[
   typedef struct bio_st BIO;
   typedef struct bio_method_st BIO_METHOD;
   typedef struct X509_VERIFY_PARAM_st X509_VERIFY_PARAM;
+  typedef struct stack_st OPENSSL_STACK;
 
   unsigned long ERR_get_error(void);
   const char *ERR_reason_error_string(unsigned long e);
