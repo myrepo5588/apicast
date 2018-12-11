@@ -1,20 +1,6 @@
 local _M = require('resty.openssl.x509')
-local ssl = require('ngx.ssl')
-local ffi = require('ffi')
 
-ffi.cdef([[
-typedef struct stack_st OPENSSL_STACK;
-
-int OPENSSL_sk_num(const OPENSSL_STACK *);
-void *OPENSSL_sk_value(const OPENSSL_STACK *, int);
-]])
-
-local function PEM_to_X509(pem)
-  local chain = ssl.parse_pem_cert(pem)
-  return ffi.C.OPENSSL_sk_value(chain, 0), chain
-end
-
-local CA = PEM_to_X509([[
+local pem = [[
 -----BEGIN CERTIFICATE-----
 MIICvDCCAaQCCQCep4rpEMmCcDANBgkqhkiG9w0BAQsFADAgMR4wHAYDVQQDDBVD
 ZXJ0aWZpY2F0ZSBBdXRob3JpdHkwHhcNMTgxMjA2MTcwNTQ3WhcNMjgxMjAzMTcw
@@ -32,56 +18,15 @@ o4fWkEQkMiKZ4bsSmM00udS5pYGiMHc3vjBcmEPzACIfcv+K29F58Lb3v2ccIXh3
 Wce2mRmiNUqt37UO1+NXSLa9+4By0j5I1dMqCRFjwQBUaDgrhQf1xpVbEQ30myyy
 Ci818xLwDp7CENLKIBNtg88u9Z+ha81pscKiG9WXCLI=
 -----END CERTIFICATE-----
-]])
-
-local client = PEM_to_X509([[
------BEGIN CERTIFICATE-----
-MIICvDCCAaQCCQDyra7VGipAyzANBgkqhkiG9w0BAQsFADAgMR4wHAYDVQQDDBVD
-ZXJ0aWZpY2F0ZSBBdXRob3JpdHkwHhcNMTgxMjA2MTcwOTA1WhcNMjgxMjAzMTcw
-OTA1WjAgMQ8wDQYDVQQKDAZDbGllbnQxDTALBgNVBAMMBGN1cmwwggEiMA0GCSqG
-SIb3DQEBAQUAA4IBDwAwggEKAoIBAQDt9H6xhm0pGqARRGMaUrSbZvetrN1mo+O4
-KuqPRr8I/YhvOEPlc/8VMxF3nyETGjQ+khO9FJGDoDD2S3yGzt1FFiNI6AOPkmux
-DZMUQ2alnS7fG0zBUlxRx9otoMx/vH4gnKTfmHofuwPwkLPSWoHf0ZmPLXbm19ds
-aKvllOX8vjEjtNprtUzveeDOnuov2GXqo/w+FOnDxYhys1Oidx3LOje5izV7EX4+
-+HH+7EwRV7m4+s/G97z5soo1XIZHHQKKC0DONWTOdeLkqLlAqU0nuuRkFzmbrD4u
-2haxqcuyficBgbFWZznLDxJ1fMJzen7YbYea1GycTKe6Wt4xviDDAgMBAAEwDQYJ
-KoZIhvcNAQELBQADggEBADY5udciqAIAFtJWVQ+AT+5RAWClGlEfi7wAfsGWUIpi
-1mQjkGSqbZ4DSEECsRNiokjSyA5Phi9REg8tDCVaovMANncptUX6PJzCkpkdD5Wo
-cMWzF8dZpphyZH+RwGM7aTGmdz/mnxKtVoTt++wLNv2jardRKoFvyu+FBzpTbWBe
-2EYaIlGHRrIMoU9ZK3D2rGHK3GsakZT3e76/P5KuyIp1+K7IEWmD4Fk3GM6uM+Rc
-Q7zGkdX+LBr85p07DHTcDxAwIT6xXh2J1fhiyart5sHkMg6YZ5JpjitIOEypnyiq
-KjTINz0a+0rohUDR6BWkdU5R8Bpbw1Pg7Owx9B51KQM=
------END CERTIFICATE-----
-]])
-
+]]
 
 describe('OpenSSL X509', function ()
 
-  describe('X509_STORE', function ()
-    it('creates X509_STORE', function ()
-      assert(_M.STORE_new())
-    end)
+  describe('parse_pem_cert', function ()
+    it('returns', function ()
+      local crt = _M.parse_pem_cert(pem)
 
-    it('adds certificate to the store', function()
-      assert(_M.STORE_new():add_cert(CA))
+      assert(crt)
     end)
   end)
-
-  describe('X509_STORE_CTX', function ()
-    it('creates X509_STORE_CTX', function ()
-      assert(_M.STORE_CTX_new())
-    end)
-
-    it('adds certificate to the store', function()
-      local store = _M.STORE_new()
-
-      store:add_cert(CA)
-
-      local ctx = _M.STORE_CTX_new(store, client)
-
-      assert(ctx:verify())
-      -- assert(ctx:verify()) -- this fails, we should design nice API impossible to misuse (not like OpenSSL)
-    end)
-  end)
-
 end)
