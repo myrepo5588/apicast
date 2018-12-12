@@ -32,7 +32,7 @@ end
 function _M:validate()
   local ctx = new_ctx()
 
-  ffi_assert(C.X509_STORE_CTX_init(ctx, tocdata(self.store), self.x509, self.chain), 1)
+  ffi_assert(C.X509_STORE_CTX_init(ctx, tocdata(self.store), tocdata(self.x509), self.chain), 1)
 
   local ret = C.X509_verify_cert(ctx)
 

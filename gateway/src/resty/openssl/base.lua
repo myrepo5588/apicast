@@ -5,6 +5,7 @@ ffi.cdef([[
   typedef struct x509_store_st X509_STORE;
   typedef struct x509_st X509;
   typedef struct X509_crl_st X509_CRL;
+  typedef struct X509_name_st X509_NAME;
   typedef struct bio_st BIO;
   typedef struct bio_method_st BIO_METHOD;
   typedef struct X509_VERIFY_PARAM_st X509_VERIFY_PARAM;

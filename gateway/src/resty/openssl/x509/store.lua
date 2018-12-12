@@ -32,6 +32,7 @@ void X509_VERIFY_PARAM_free(X509_VERIFY_PARAM *param);
 
 local C = ffi.C
 local ffi_assert = base.ffi_assert
+local tocdata = base.tocdata
 
 local X509_V_FLAG_PARTIAL_CHAIN = 0x80000
 
@@ -65,7 +66,7 @@ local mt = {
 local X509_STORE = ffi.metatype('struct { void *cdata; }', mt)
 
 function _M:add_cert(x509)
-  return ffi_assert(C.X509_STORE_add_cert(self.cdata, x509))
+  return ffi_assert(C.X509_STORE_add_cert(tocdata(self), tocdata(x509)))
 end
 
 function _M:validate_cert(x509, chain)
@@ -73,7 +74,6 @@ function _M:validate_cert(x509, chain)
 
   return ctx:validate()
 end
-
 
 function _M.new()
   return X509_STORE()
