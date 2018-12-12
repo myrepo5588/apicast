@@ -56,6 +56,9 @@ local mt = {
 
     ffi.gc(store, C.X509_STORE_free)
 
+    -- no idea why, but without it the store is going to crash when initialized in rewrite phase and used within access one
+    ffi_assert(C.X509_STORE_up_ref(store))
+
     return ffi.new(ct, store)
   end
 }
@@ -72,6 +75,7 @@ function _M:validate_cert(x509, chain)
 
   return ctx:validate()
 end
+
 
 function _M.new()
   return X509_STORE()

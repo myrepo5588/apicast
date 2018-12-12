@@ -1,5 +1,6 @@
 local ssl = require('ngx.ssl')
 local ffi = require('ffi')
+local X509 = require('resty.openssl.x509')
 
 ffi.cdef([[
 // https://github.com/openssl/openssl/blob/4ace4ccda2934d2628c3d63d41e79abe041621a7/include/openssl/stack.h
@@ -35,6 +36,26 @@ Wce2mRmiNUqt37UO1+NXSLa9+4By0j5I1dMqCRFjwQBUaDgrhQf1xpVbEQ30myyy
 Ci818xLwDp7CENLKIBNtg88u9Z+ha81pscKiG9WXCLI=
 -----END CERTIFICATE-----
 ]])
+
+local pem = [[
+-----BEGIN CERTIFICATE-----
+MIICvDCCAaQCCQDyra7VGipAyzANBgkqhkiG9w0BAQsFADAgMR4wHAYDVQQDDBVD
+ZXJ0aWZpY2F0ZSBBdXRob3JpdHkwHhcNMTgxMjA2MTcwOTA1WhcNMjgxMjAzMTcw
+OTA1WjAgMQ8wDQYDVQQKDAZDbGllbnQxDTALBgNVBAMMBGN1cmwwggEiMA0GCSqG
+SIb3DQEBAQUAA4IBDwAwggEKAoIBAQDt9H6xhm0pGqARRGMaUrSbZvetrN1mo+O4
+KuqPRr8I/YhvOEPlc/8VMxF3nyETGjQ+khO9FJGDoDD2S3yGzt1FFiNI6AOPkmux
+DZMUQ2alnS7fG0zBUlxRx9otoMx/vH4gnKTfmHofuwPwkLPSWoHf0ZmPLXbm19ds
+aKvllOX8vjEjtNprtUzveeDOnuov2GXqo/w+FOnDxYhys1Oidx3LOje5izV7EX4+
++HH+7EwRV7m4+s/G97z5soo1XIZHHQKKC0DONWTOdeLkqLlAqU0nuuRkFzmbrD4u
+2haxqcuyficBgbFWZznLDxJ1fMJzen7YbYea1GycTKe6Wt4xviDDAgMBAAEwDQYJ
+KoZIhvcNAQELBQADggEBADY5udciqAIAFtJWVQ+AT+5RAWClGlEfi7wAfsGWUIpi
+1mQjkGSqbZ4DSEECsRNiokjSyA5Phi9REg8tDCVaovMANncptUX6PJzCkpkdD5Wo
+cMWzF8dZpphyZH+RwGM7aTGmdz/mnxKtVoTt++wLNv2jardRKoFvyu+FBzpTbWBe
+2EYaIlGHRrIMoU9ZK3D2rGHK3GsakZT3e76/P5KuyIp1+K7IEWmD4Fk3GM6uM+Rc
+Q7zGkdX+LBr85p07DHTcDxAwIT6xXh2J1fhiyart5sHkMg6YZ5JpjitIOEypnyiq
+KjTINz0a+0rohUDR6BWkdU5R8Bpbw1Pg7Owx9B51KQM=
+-----END CERTIFICATE-----
+]]
 
 local client = PEM_to_X509([[
 -----BEGIN CERTIFICATE-----
@@ -72,6 +93,13 @@ describe('OpenSSL X509 Store', function()
   end)
 
   describe(':validate_cert', function()
+    it('works with X509 object', function ()
+      local x509 = X509.parse_pem_cert(pem)
+      local store = _M.new()
+
+      assert.returns_error('unable to get local issuer certificate', store:validate_cert(x509))
+    end)
+
     it('validates self signed certificate', function()
       local store = _M.new()
 
