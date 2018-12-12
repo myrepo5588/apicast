@@ -18,6 +18,8 @@ function _M.new(config)
   for _,certificate in ipairs(config and config.whitelist or {}) do
     local cert = X509.parse_pem_cert(certificate.pem_certificate) -- TODO: handle errors
     store:add_cert(cert)
+    -- get certificate fingerprint and print it in the log
+    -- ngx.log(ngx.DEBUG, 'adding certificate to the tls validation')
   end
 
   self.x509_store = store

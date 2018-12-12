@@ -25,10 +25,11 @@ local mt = {
   __new = function(ct, bio_method)
     local bio = ffi_assert(C.BIO_new(bio_method))
 
-    ffi_gc(bio, C.BIO_vfree)
-
     return ffi.new(ct, bio)
-  end
+  end,
+  __gc = function(self)
+    C.BIO_vfree(self.cdata)
+  end,
 }
 
 -- no changes to the metamethods possible from this point

@@ -1,23 +1,6 @@
-local ssl = require('ngx.ssl')
-local ffi = require('ffi')
 local X509 = require('resty.openssl.x509')
 
-ffi.cdef([[
-// https://github.com/openssl/openssl/blob/4ace4ccda2934d2628c3d63d41e79abe041621a7/include/openssl/stack.h
-typedef struct stack_st OPENSSL_STACK;
-
-int OPENSSL_sk_num(const OPENSSL_STACK *);
-void *OPENSSL_sk_value(const OPENSSL_STACK *, int);
-void *OPENSSL_sk_shift(OPENSSL_STACK *st);
-]])
-
-local function PEM_to_X509(pem)
-  local chain = ssl.parse_pem_cert(pem)
-  local cert = ffi.C.OPENSSL_sk_shift(chain)
-  return cert, chain
-end
-
-local CA = PEM_to_X509([[
+local CA = X509.parse_pem_cert([[
 -----BEGIN CERTIFICATE-----
 MIICvDCCAaQCCQCep4rpEMmCcDANBgkqhkiG9w0BAQsFADAgMR4wHAYDVQQDDBVD
 ZXJ0aWZpY2F0ZSBBdXRob3JpdHkwHhcNMTgxMjA2MTcwNTQ3WhcNMjgxMjAzMTcw
@@ -57,7 +40,7 @@ KjTINz0a+0rohUDR6BWkdU5R8Bpbw1Pg7Owx9B51KQM=
 -----END CERTIFICATE-----
 ]]
 
-local client = PEM_to_X509([[
+local client = X509.parse_pem_cert([[
 -----BEGIN CERTIFICATE-----
 MIICvDCCAaQCCQDyra7VGipAyzANBgkqhkiG9w0BAQsFADAgMR4wHAYDVQQDDBVD
 ZXJ0aWZpY2F0ZSBBdXRob3JpdHkwHhcNMTgxMjA2MTcwOTA1WhcNMjgxMjAzMTcw

@@ -54,12 +54,10 @@ local mt = {
     local verify_param = X509_VERIFY_PARAM(X509_V_FLAG_PARTIAL_CHAIN)
     ffi_assert(C.X509_STORE_set1_param(store, verify_param),1)
 
-    ffi.gc(store, C.X509_STORE_free)
-
-    -- no idea why, but without it the store is going to crash when initialized in rewrite phase and used within access one
-    ffi_assert(C.X509_STORE_up_ref(store))
-
     return ffi.new(ct, store)
+  end,
+  __gc = function(self)
+    C.X509_STORE_free(self.cdata)
   end
 }
 
