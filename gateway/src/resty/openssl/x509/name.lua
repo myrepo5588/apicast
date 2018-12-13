@@ -9,79 +9,74 @@ char * X509_NAME_oneline(const X509_NAME *a, char *buf, int size);
 int X509_NAME_print(BIO *bp, const X509_NAME *name, int obase);
 ]])
 
-local XN_FLAG_SEP_MASK = bit.lshift(0xf, 16)
+local const = {
 
-local XN_FLAG_COMPAT = 0
-local XN_FLAG_SEP_COMMA_PLUS = bit.lshift(1, 16)
-local XN_FLAG_SEP_CPLUS_SPC = bit.lshift(2, 16)
-local XN_FLAG_SEP_SPLUS_SPC = bit.lshift(3, 16)
-local XN_FLAG_SEP_MULTILINE = bit.lshift(4, 16)
+}
 
-local XN_FLAG_DN_REV = bit.lshift(1, 20)
+const.XN_FLAG_SEP_MASK = bit.lshift(0xf, 16)
 
-local XN_FLAG_FN_MASK = bit.lshift(0x3, 21)
+const.XN_FLAG_COMPAT = 0
+const.XN_FLAG_SEP_COMMA_PLUS = bit.lshift(1, 16)
+const.XN_FLAG_SEP_CPLUS_SPC = bit.lshift(2, 16)
+const.XN_FLAG_SEP_SPLUS_SPC = bit.lshift(3, 16)
+const.XN_FLAG_SEP_MULTILINE = bit.lshift(4, 16)
+const.XN_FLAG_DN_REV = bit.lshift(1, 20)
+const.XN_FLAG_FN_MASK = bit.lshift(0x3, 21)
+const.XN_FLAG_FN_SN = 0
+const.XN_FLAG_FN_LN = bit.lshift(1, 21)
+const.XN_FLAG_FN_OID = bit.lshift(2, 21)
+const.XN_FLAG_FN_NONE = bit.lshift(3, 21)
+const.XN_FLAG_SPC_EQ = bit.lshift(1, 23)
+const.XN_FLAG_DUMP_UNKNOWN_FIELDS = bit.lshift(1, 24)
+const.XN_FLAG_FN_ALIGN = bit.lshift(1, 25)
+const.ASN1_STRFLGS_ESC_2253 = 1
+const.ASN1_STRFLGS_ESC_CTRL = 2
+const.ASN1_STRFLGS_ESC_MSB = 4
+const.ASN1_STRFLGS_ESC_QUOTE = 8
+const.CHARTYPE_PRINTABLESTRING = 0x10
+const.CHARTYPE_FIRST_ESC_2253 = 0x20
+const.CHARTYPE_LAST_ESC_2253 = 0x40
+const.ASN1_STRFLGS_UTF8_CONVERT = 0x10
+const.ASN1_STRFLGS_IGNORE_TYPE = 0x20
+const.ASN1_STRFLGS_SHOW_TYPE = 0x40
+const.ASN1_STRFLGS_DUMP_ALL = 0x80
+const.ASN1_STRFLGS_DUMP_UNKNOWN = 0x100
+const.ASN1_STRFLGS_DUMP_DER = 0x200
+const.SN1_STRFLGS_ESC_2254 = 0x400
 
-local XN_FLAG_FN_SN = 0
-local XN_FLAG_FN_LN = bit.lshift(1, 21)
-local XN_FLAG_FN_OID = bit.lshift(2, 21)
-local XN_FLAG_FN_NONE = bit.lshift(3, 21)
+const.ASN1_STRFLGS_RFC2253 = bit.bor(
+    const.ASN1_STRFLGS_ESC_2253,
+    const.ASN1_STRFLGS_ESC_CTRL,
+    const.ASN1_STRFLGS_ESC_MSB,
+    const.ASN1_STRFLGS_UTF8_CONVERT,
+    const.ASN1_STRFLGS_DUMP_UNKNOWN,
+    const.ASN1_STRFLGS_DUMP_DER
+)
 
-local XN_FLAG_SPC_EQ = bit.lshift(1, 23)
+const.XN_FLAG_RFC2253 = bit.bor(
+    const.ASN1_STRFLGS_RFC2253,
+    const.XN_FLAG_SEP_COMMA_PLUS,
+    const.XN_FLAG_DN_REV,
+    const.XN_FLAG_FN_SN,
+    const.XN_FLAG_DUMP_UNKNOWN_FIELDS
+)
 
-local XN_FLAG_DUMP_UNKNOWN_FIELDS = bit.lshift(1, 24)
+const.XN_FLAG_ONELINE = bit.bor(
+    const.ASN1_STRFLGS_RFC2253,
+    const.ASN1_STRFLGS_ESC_QUOTE,
+    const.XN_FLAG_SEP_CPLUS_SPC,
+    const.XN_FLAG_SPC_EQ,
+    const.XN_FLAG_FN_SN
+)
 
-local XN_FLAG_FN_ALIGN = bit.lshift(1, 25)
-
-local ASN1_STRFLGS_ESC_2253 = 1
-local ASN1_STRFLGS_ESC_CTRL = 2
-local ASN1_STRFLGS_ESC_MSB = 4
-
-local ASN1_STRFLGS_ESC_QUOTE = 8
-
-local CHARTYPE_PRINTABLESTRING = 0x10
-
-local CHARTYPE_FIRST_ESC_2253 = 0x20
-
-local CHARTYPE_LAST_ESC_2253 = 0x40
-
-local ASN1_STRFLGS_UTF8_CONVERT = 0x10
-
-local ASN1_STRFLGS_IGNORE_TYPE = 0x20
-
-local ASN1_STRFLGS_SHOW_TYPE = 0x40
-
-local ASN1_STRFLGS_DUMP_ALL = 0x80
-local ASN1_STRFLGS_DUMP_UNKNOWN = 0x100
-
-local ASN1_STRFLGS_DUMP_DER = 0x200
-
-local SN1_STRFLGS_ESC_2254 = 0x400
-
-local ASN1_STRFLGS_RFC2253 = bit.bor(ASN1_STRFLGS_ESC_2253,
-    ASN1_STRFLGS_ESC_CTRL,
-    ASN1_STRFLGS_ESC_MSB,
-    ASN1_STRFLGS_UTF8_CONVERT,
-    ASN1_STRFLGS_DUMP_UNKNOWN,
-    ASN1_STRFLGS_DUMP_DER)
-
-local XN_FLAG_RFC2253 = bit.bor(ASN1_STRFLGS_RFC2253,
-    XN_FLAG_SEP_COMMA_PLUS,
-    XN_FLAG_DN_REV,
-    XN_FLAG_FN_SN,
-    XN_FLAG_DUMP_UNKNOWN_FIELDS)
-
-local XN_FLAG_ONELINE = bit.bor(ASN1_STRFLGS_RFC2253,
-    ASN1_STRFLGS_ESC_QUOTE,
-    XN_FLAG_SEP_CPLUS_SPC,
-    XN_FLAG_SPC_EQ,
-    XN_FLAG_FN_SN)
-
-local XN_FLAG_MULTILINE = bit.bor(ASN1_STRFLGS_ESC_CTRL,
-    ASN1_STRFLGS_ESC_MSB,
-    XN_FLAG_SEP_MULTILINE,
-    XN_FLAG_SPC_EQ,
-    XN_FLAG_FN_LN,
-    XN_FLAG_FN_ALIGN)
+const.XN_FLAG_MULTILINE = bit.bor(
+    const.ASN1_STRFLGS_ESC_CTRL,
+    const.ASN1_STRFLGS_ESC_MSB,
+    const.XN_FLAG_SEP_MULTILINE,
+    const.XN_FLAG_SPC_EQ,
+    const.XN_FLAG_FN_LN,
+    const.XN_FLAG_FN_ALIGN
+)
 
 local C = ffi.C
 local tocdata = base.tocdata
@@ -92,7 +87,8 @@ local mt = {
   __new = ffi.new,
   __tostring = function(self)
     local bio = BIO.new()
-    C.X509_NAME_print_ex(tocdata(bio), tocdata(self), 0, XN_FLAG_ONELINE)
+
+    C.X509_NAME_print_ex(tocdata(bio), tocdata(self), 0, const.XN_FLAG_ONELINE)
 
     return bio:read()
   end
