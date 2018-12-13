@@ -2,7 +2,7 @@ local base = require('resty.openssl.base')
 local BIO = require('resty.openssl.bio')
 local X509_NAME = require('resty.openssl.x509.name')
 local EVP_MD = require('resty.openssl.evp')
-local str = require('resty.string')
+local resty_str = require('resty.string')
 local ffi = require('ffi')
 
 ffi.cdef([[
@@ -86,7 +86,7 @@ end
 function _M:hexdigest(evp_md)
   local digest = self:digest(evp_md)
 
-  return str.to_hex(digest)
+  return resty_str.to_hex(digest)
 end
 
 return _M
