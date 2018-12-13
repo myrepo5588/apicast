@@ -13,8 +13,8 @@ ffi.cdef([[
 ]])
 local C = ffi.C
 local ffi_assert = base.ffi_assert
-local ffi_gc = ffi.gc
 local str_len = string.len
+local assert = assert
 
 local _M = {
 
@@ -47,7 +47,7 @@ function _M:read()
 end
 
 function _M:write(str)
-  local len = str_len(str)
+  local len = str_len(assert(str, 'expected string'))
 
   return ffi_assert(C.BIO_write(self.cdata, str, len))
 end

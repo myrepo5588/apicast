@@ -7,14 +7,25 @@ describe('OpenSSL BIO', function()
     end)
   end)
 
-
-  describe('.write', function()
+  describe(':write', function()
     it('writes data to bio', function()
-        local bio = _M.new()
-        local str = 'foobar'
+      local bio = _M.new()
+      local str = 'foobar'
 
-        assert(bio:write(str))
-        assert.equal(str, bio:read())
+      assert(bio:write(str))
+      assert.equal(str, bio:read())
+    end)
+
+    it('requires a string', function()
+      local bio = _M.new()
+
+      assert.has_error(function () bio:write() end, 'expected string')
+    end)
+
+    it('requires non empty string', function()
+      local bio = _M.new()
+
+      assert.has_error(function () bio:write('') end, 'expected value, got nil')
     end)
   end)
 
