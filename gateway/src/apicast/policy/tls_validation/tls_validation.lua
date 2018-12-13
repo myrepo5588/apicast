@@ -9,6 +9,8 @@ local X509 = require('resty.openssl.x509')
 local ipairs = ipairs
 local tostring = tostring
 
+local debug = ngx.config.debug
+
 local new = _M.new
 --- Initialize a tls_validation
 -- @tparam[opt] table config Policy configuration.
@@ -17,12 +19,20 @@ function _M.new(config)
   local store = X509_STORE.new()
 
   for _,certificate in ipairs(config and config.whitelist or {}) do
-    local cert = X509.parse_pem_cert(certificate.pem_certificate) -- TODO: handle errors
-    store:add_cert(cert)
-    -- get certificate fingerprint and print it in the log
+    local cert, err = X509.parse_pem_cert(certificate.pem_certificate) -- TODO: handle errors
 
-    if ngx.config.debug then
-      ngx.log(ngx.DEBUG, 'adding certificate to the tls validation ', tostring(cert:subject_name()), ' SHA1: ', cert:hexdigest('SHA1'))
+    if cert then
+      store:add_cert(cert)
+
+      if debug then
+        ngx.log(ngx.DEBUG, 'adding certificate to the tls validation ', tostring(cert:subject_name()), ' SHA1: ', cert:hexdigest('SHA1'))
+      end
+    else
+      ngx.log(ngx.WARN, 'error whitelisting certificate, err: ', err)
+
+      if debug then
+        ngx.log(ngx.DEBUG, 'certificate: ', certificate.pem_certificate)
+      end
     end
   end
 
