@@ -48,19 +48,29 @@ local function openssl_error()
     end
   end
 
+  C.ERR_clear_error()
+
   if reason then
     return ffi.string(reason)
   end
 end
 
-local function ffi_assert(ret, expected)
-  if not ret or ret == -1 or (expected and ret ~= expected) then
-    error(openssl_error() or 'expected value, got nil', 2)
+local function ffi_value(ret, expected)
+  if ret == nil or ret == -1 or (expected and ret ~= expected) then
+    return nil, openssl_error() or 'expected value, got nil'
   end
 
-  C.ERR_clear_error()
-
   return ret
+end
+
+local function ffi_assert(ret, expected)
+  local value, err = ffi_value(ret, expected)
+
+  if not value then
+    error(err, 2)
+  end
+
+  return value
 end
 
 local function tocdata(obj)
@@ -68,6 +78,7 @@ local function tocdata(obj)
 end
 
 _M.ffi_assert = ffi_assert
+_M.ffi_value = ffi_value
 _M.openssl_error = openssl_error
 _M.tocdata = tocdata
 
