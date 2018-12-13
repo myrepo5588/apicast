@@ -1,7 +1,6 @@
 -- This is a tls_validation description.
 
 local policy = require('apicast.policy')
-local ssl = require('ngx.ssl')
 local _M = policy.new('tls_validation')
 local X509_STORE = require('resty.openssl.x509.store')
 local X509 = require('resty.openssl.x509')
