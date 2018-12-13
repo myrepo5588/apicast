@@ -33,7 +33,7 @@ local mt = {
 }
 
 -- no changes to the metamethods possible from this point
-local BIO = ffi.metatype('struct { void *cdata; }', mt)
+local BIO = ffi.metatype('struct { BIO *cdata; }', mt)
 
 local bio_mem = C.BIO_s_mem()
 

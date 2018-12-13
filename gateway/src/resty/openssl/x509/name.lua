@@ -98,7 +98,7 @@ local mt = {
   end
 }
 
-local X509_NAME = ffi.metatype('struct { void *cdata; }', mt)
+local X509_NAME = ffi.metatype('struct { X509_NAME *cdata; }', mt)
 
 function _M.new(name)
   return X509_NAME(assert(name))

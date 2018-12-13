@@ -29,7 +29,7 @@ local mt = {
   end
 }
 
-local X509 = ffi.metatype('struct { void *cdata; }', mt)
+local X509 = ffi.metatype('struct { X509 *cdata; }', mt)
 
 function _M.parse_pem_cert(str)
   local bio = BIO.new()

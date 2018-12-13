@@ -63,7 +63,7 @@ local mt = {
 }
 
 -- no changes to the metamethods possible from this point
-local X509_STORE = ffi.metatype('struct { void *cdata; }', mt)
+local X509_STORE = ffi.metatype('struct { X509_STORE *cdata; }', mt)
 
 function _M:add_cert(x509)
   return ffi_assert(C.X509_STORE_add_cert(tocdata(self), tocdata(x509)))
