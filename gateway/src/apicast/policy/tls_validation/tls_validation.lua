@@ -7,6 +7,7 @@ local X509_STORE = require('resty.openssl.x509.store')
 local X509 = require('resty.openssl.x509')
 
 local ipairs = ipairs
+local tostring = tostring
 
 local new = _M.new
 --- Initialize a tls_validation
@@ -19,11 +20,14 @@ function _M.new(config)
     local cert = X509.parse_pem_cert(certificate.pem_certificate) -- TODO: handle errors
     store:add_cert(cert)
     -- get certificate fingerprint and print it in the log
-    -- ngx.log(ngx.DEBUG, 'adding certificate to the tls validation')
+
+    if ngx.config.debug then
+      ngx.log(ngx.DEBUG, 'adding certificate to the tls validation ', tostring(cert:subject_name()), ' SHA1: ', cert:hexdigest('SHA1'))
+    end
   end
 
   self.x509_store = store
-  self.error_status = config and config.error_status or 403
+  self.error_status = config and config.error_status or 400
 
   return self
 end
