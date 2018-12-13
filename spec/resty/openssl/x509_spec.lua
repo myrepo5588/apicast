@@ -30,6 +30,12 @@ describe('OpenSSL X509', function ()
 
       assert(crt)
     end)
+
+    it('does not crash on invalid certificate', function()
+      assert.returns_error('no start line', _M.parse_pem_cert('garbage'))
+      assert.returns_error('bad end line', _M.parse_pem_cert('-----BEGIN CERTIFICATE-----'))
+      assert.returns_error('invalid certificate', _M.parse_pem_cert(''))
+    end)
   end)
 
   describe(':name()', function()

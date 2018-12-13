@@ -21,13 +21,20 @@ int X509_digest(const X509 *data, const EVP_MD *type, unsigned char *md, unsigne
 ]])
 
 local C = ffi.C
+local openssl_error = base.openssl_error
 local ffi_assert = base.ffi_assert
 local tocdata = base.tocdata
 local assert = assert
 local _M = {}
 local mt = {
   __index = _M,
-  __new = ffi.new,
+  __new = function(ct, x509)
+    if x509 == nil then
+      return nil, openssl_error()
+    else
+      return ffi.new(ct, x509)
+    end
+  end,
   __gc = function(self)
     C.X509_free(self.cdata)
   end
@@ -35,14 +42,20 @@ local mt = {
 
 local X509 = ffi.metatype('struct { X509 *cdata; }', mt)
 
-function _M.parse_pem_cert(str)
+local function parse_pem_cert(str)
   local bio = BIO.new()
 
   assert(bio:write(str))
 
-  local x509 = ffi_assert(C.PEM_read_bio_X509(bio.cdata, nil, nil, nil))
+  return X509(C.PEM_read_bio_X509(bio.cdata, nil, nil, nil))
+end
 
-  return X509(x509)
+function _M.parse_pem_cert(str)
+  if str and #str > 0 then
+    return parse_pem_cert(str)
+  else
+    return nil, 'invalid certificate'
+  end
 end
 
 function _M:subject_name()
