@@ -10,14 +10,8 @@ local tostring = tostring
 
 local debug = ngx.config.debug
 
-local new = _M.new
---- Initialize a tls_validation
--- @tparam[opt] table config Policy configuration.
-function _M.new(config)
-  local self = new(config)
-  local store = X509_STORE.new()
-
-  for _,certificate in ipairs(config and config.whitelist or {}) do
+local function init_trusted_store(store, certificates)
+  for _,certificate in ipairs(certificates) do
     local cert, err = X509.parse_pem_cert(certificate.pem_certificate) -- TODO: handle errors
 
     if cert then
@@ -35,7 +29,17 @@ function _M.new(config)
     end
   end
 
-  self.x509_store = store
+  return store
+end
+
+local new = _M.new
+--- Initialize a tls_validation
+-- @tparam[opt] table config Policy configuration.
+function _M.new(config)
+  local self = new(config)
+  local store = X509_STORE.new()
+
+  self.x509_store = init_trusted_store(store, config and config.whitelist or {})
   self.error_status = config and config.error_status or 400
 
   return self
