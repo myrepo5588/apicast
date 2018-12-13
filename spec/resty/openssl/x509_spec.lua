@@ -20,6 +20,8 @@ Ci818xLwDp7CENLKIBNtg88u9Z+ha81pscKiG9WXCLI=
 -----END CERTIFICATE-----
 ]]
 
+local certificate = _M.parse_pem_cert(pem)
+
 describe('OpenSSL X509', function ()
 
   describe('parse_pem_cert', function ()
@@ -27,6 +29,28 @@ describe('OpenSSL X509', function ()
       local crt = _M.parse_pem_cert(pem)
 
       assert(crt)
+    end)
+  end)
+
+  describe(':name()', function()
+    it('returns subject name', function()
+      assert.equal('CN = Certificate Authority', tostring(certificate:subject_name()))
+    end)
+
+    it('returns issuer name', function()
+      assert.equal('CN = Certificate Authority', tostring(certificate:issuer_name()))
+    end)
+  end)
+
+  describe(':digest', function ()
+    it('returns a digest', function ()
+      assert(certificate:digest('SHA256'))
+    end)
+  end)
+
+  describe(':hexdigest', function ()
+    it('returns a hex formatted digest', function ()
+      assert.equal('874fd0756c3c36c78319ca6e484e670780b86146', certificate:hexdigest('SHA1'))
     end)
   end)
 end)

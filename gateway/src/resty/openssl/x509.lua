@@ -1,6 +1,8 @@
 local base = require('resty.openssl.base')
 local BIO = require('resty.openssl.bio')
 local X509_NAME = require('resty.openssl.x509.name')
+local EVP_MD = require('resty.openssl.evp')
+local str = require('resty.string')
 local ffi = require('ffi')
 
 ffi.cdef([[
@@ -14,6 +16,8 @@ X509_NAME *X509_get_issuer_name(const X509 *x);
 
 X509 *X509_new(void);
 void X509_free(X509 *a);
+
+int X509_digest(const X509 *data, const EVP_MD *type, unsigned char *md, unsigned int *len);
 ]])
 
 local C = ffi.C
@@ -53,6 +57,23 @@ function _M:issuer_name()
   -- and X509_set_subject_name() except the get and set the issuer name of x.
   -- https://www.openssl.org/docs/man1.1.0/crypto/X509_get_subject_name.html
   return X509_NAME.new(C.X509_get_issuer_name(tocdata(self)))
+end
+
+function _M:digest(name)
+  local evp = EVP_MD.new(name) -- TODO: this EVP_MD object can he cached or passed
+  local md_size = #evp
+  local buf = ffi.new("unsigned char[?]", md_size)
+  local len = ffi.new("unsigned int[1]", md_size)
+
+  ffi_assert(C.X509_digest(tocdata(self), tocdata(evp), buf, len), 1)
+
+  return ffi.string(buf, len[0])
+end
+
+function _M:hexdigest(evp_md)
+  local digest = self:digest(evp_md)
+
+  return str.to_hex(digest)
 end
 
 return _M
