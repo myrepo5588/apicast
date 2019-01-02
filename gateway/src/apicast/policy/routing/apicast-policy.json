@@ -1,0 +1,84 @@
+{
+  "$schema": "http://apicast.io/policy-v1/schema#manifest#",
+  "name": "Routing",
+  "summary": "Allows to modify the upstream URL of the request.",
+  "description":
+  ["This policy allows to modify the upstream URL (scheme, host and port) of ",
+   "the request based on its path, its query arguments, a header, or a JWT ",
+   "claim. \n",
+   "When combined with the APIcast policy, the upstream policy should be ",
+   "placed before it in the policy chain."],
+  "version": "builtin",
+  "configuration": {
+    "type": "object",
+    "definitions": {
+      "rule": {
+        "type": "object",
+        "$id": "#/definitions/rule",
+        "properties": {
+          "entity": {
+            "type": "string",
+            "enum": [
+              "path",
+              "header",
+              "query_arg",
+              "jwt_claim"
+            ]
+          },
+          "op": {
+            "type": "string",
+            "enum": [
+              "==",
+              "!=",
+              "matches"
+            ]
+          },
+          "value": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "entity", "op", "value", "url"
+        ],
+        "dependencies":{
+          "entity":{
+            "oneOf":[
+              {
+                "properties": {
+                  "entity": {
+                    "enum":["header", "query_arg", "jwt_claim"]
+                  },
+                  "entity_value":{
+                    "type": "string"
+                  }
+                },
+                "required":[
+                  "entity_value"
+                ]
+              },
+              {
+                "properties": {
+                  "entity" : {
+                    "enum": ["path"]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "properties": {
+      "rules": {
+        "description": "list of rules to be applied",
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/rule"
+        }
+      }
+    }
+  }
+}
